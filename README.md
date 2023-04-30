@@ -11,4 +11,4 @@ New to dbt packages? Read more about them [here](https://docs.getdbt.com/docs/bu
 2. Run `dbt deps` 
 
 ## Usage
-[readme/stream.mp4](https://github.com/arnoN7/dbt-incremental-stream/blob/df47e7eca2a0711ced0a52f3fcb59bdd7ae0cdcf/readme/stream.mp4)
+![readme/stream.mp4](https://github.com/arnoN7/dbt-incremental-stream/blob/df47e7eca2a0711ced0a52f3fcb59bdd7ae0cdcf/readme/stream.mp4)
