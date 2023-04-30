@@ -1,0 +1,12 @@
+version: 2
+
+models:
+  - name: add_clients
+    description: Add random clients to ADD_CLIENTS table
+
+    # Configure in ways that feel intuitive and familiar
+    config:
+      materialized: incremental
+      tags: ['python']
+      nb_clients: "{{ var('nb_clients') }}"
+

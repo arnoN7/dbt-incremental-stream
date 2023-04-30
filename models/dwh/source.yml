@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: STREAM
+    database: PERSO
+    schema: TEST_STREAM
+    tables:
+      - name: CLIENT
