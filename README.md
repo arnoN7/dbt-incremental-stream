@@ -108,8 +108,8 @@ dbt run --select add_clients --full-refresh
 
 ## conso_clients model
 A sample model leveraging on `incremental_stream` custom materialization
-1. Collecting lastest data ingested in `add_clients`
-2. De-duplicating it based on `ID` with most recent `CREATED_AT` from `add_clients` [stream](https://docs.snowflake.com/en/user-guide/streams-intro) or table
+1. Collecting lastest data ingested in [add_clients](#add_clients-model)
+2. De-duplicating it based on `ID` with most recent `CREATED_AT` from [add_clients](#add_clients-model) stream or table
 3. `MERGE` data in `CONSO_CLIENTS` table with `ID` as unique key 
 
 **Sample commands** 
