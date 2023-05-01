@@ -72,6 +72,7 @@ Incremental materialization will perform the following tasks :
 |-------|-------------|
 | [add_clients](#add_clients-model) ([source](/integration_tests/models/stg/add_clients.py)) | Python 🐍 incremental model adding new random clients. To simulate a stream source like a Kafka topic |
 | [conso_clients](#conso_clients-model) ([source](/integration_tests/models/dwh/conso_client.sql)) | `incremental_stream` model de-duplicating clients on `ID` |
+
 ![lineage](/readme/lineage.png)
 ```
 # Create ADD_CLIENT source or add new random clients and merge it in CONSO_CLIENTS
