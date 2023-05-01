@@ -93,7 +93,7 @@ Python 🐍 incremental model :
 | 3  |     Amy     |  Weston   | 1985-10-08 |2023-04-28 15:01:10|
 
 >**Note** 
->`nb_clients` [variable](https://docs.getdbt.com/docs/using-variables) define the number of random clients to add (default 30)
+>`nb_clients` [variable](https://docs.getdbt.com/docs/using-variables) defines the number of random clients to add (default 30)
 
 **Sample commands** 
 ```
