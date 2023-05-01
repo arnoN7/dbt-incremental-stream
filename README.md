@@ -63,5 +63,3 @@ Incremental materialization will perform the following tasks :
 * `CREATE OR REPLACE` a view to perform the transformation developped in the model 
 *  If stream is empty **materialization stops** and prevent `RESUME` of Snowflake Warehouse   
 * `MERGE` the view with `{{this}}` based on `unique_key` provided
-
-
