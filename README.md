@@ -76,6 +76,7 @@ Incremental materialization will perform the following tasks :
 ![lineage](/readme/lineage.png)
 ```
 # Add 30 new random clients to ADD_CLIENTS table and merge it in CONSO_CLIENTS
+cd ./integration_test
 dbt run
 ```
 
