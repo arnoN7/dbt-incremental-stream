@@ -4,6 +4,7 @@
 {#--    1) sql = SELECT statement with source or ref tables --#}
 {#--    2) src_table = source or ref table  		        --#}
 {#--    3) unique_key = PK used for the merge               --#}
+{#--    3) sql = SQL used for the transformation            --#}
 {#-- ###################################################### --#}
 
 {%- macro merge_stream_sql(target_relation, src, unique_key, sql) -%}
@@ -22,13 +23,14 @@
 {%- endif -%}
 
 {%- set target_table = this.database + '.' + this.schema + '.' + this.name -%}
-{%- set target_stream = this.database + '.' + this.schema + '.S_' + this.name -%}
+{%- set target_stream = this.database + '.' + this.schema + '.'+ incr_stream.get_stream_name(this.table, src_table) -%}
 {%- set target_view = this.database + '.' + this.schema + '.V_' + this.name -%}
-{#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
+{#-- Drop Target Table and Stream in full-refresh mode  --#}
 {% if full_refresh_mode -%} 
-DROP TABLE {{ this }};
-DROP STREAM {{target_stream}};
+DROP TABLE IF EXISTS {{ this }};
+DROP STREAM IF EXISTS {{target_stream}};
 {% endif %}
+{#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
 CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} APPEND_ONLY=TRUE;
 CREATE OR REPLACE VIEW {{target_view}}
     AS ({{ sql }});
@@ -46,17 +48,16 @@ INSERT INTO {{this}} SELECT * FROM {{target_view}};
 {%- set results = run_query(v_count) -%}
 
 {%- if execute -%}
-        {# Return the first column #}
         {%- set v_count = results.columns[0].values()[0] -%}
 {%- else -%}
         {%- set v_count = 0 -%}
 {%- endif -%}
 
 
-{#-- In case of mode mode RUN --#}
 {{ log("  => " +v_count | string + " record(s) to merge" , info=True) }}
 {%- endif -%}
 
+{#-- Execute Merge only if new records in stream  --#}
 {%- if v_count > 0  -%}
     {%- set s_count = v_count | string() -%}
 
@@ -92,11 +93,6 @@ INSERT INTO {{this}} SELECT * FROM {{target_view}};
 {%- materialization incremental_stream, adapter='snowflake' -%}
   {%- set src = config.get('src') -%}
   {%- set src_table = config.get('src_table') -%}
-  {%- if src -%} 
-        {%- set source_table = source(src,src_table) -%} 
-  {%- else -%} 
-        {%- set source_table = ref(src_table) -%} 
-  {%- endif -%}
 
   {%- set unique_key = config.get('unique_key') -%}
 
@@ -110,7 +106,7 @@ INSERT INTO {{this}} SELECT * FROM {{target_view}};
   {{ run_hooks(pre_hooks, inside_transaction=True) }}
 
   {#-- Create the MERGE --#}
-  {%- set build_sql = merge_stream_sql(target_relation, src, unique_key, sql) -%}
+  {%- set build_sql = incr_stream.merge_stream_sql(target_relation, src, unique_key, sql) -%}
 
   {%- call statement('main') -%}
     {{ build_sql }}

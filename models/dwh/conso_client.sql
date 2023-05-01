@@ -1,8 +1,7 @@
 {{-
     config(
         materialized='incremental_stream',
-        unique_key=['ID'],
-        src_table='add_clients'
+        unique_key=['ID']
     )
 -}}
 with client_with_dup as (
