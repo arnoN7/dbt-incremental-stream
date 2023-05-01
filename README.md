@@ -16,7 +16,7 @@ New to dbt packages? Read more about them [here](https://docs.getdbt.com/docs/bu
 ## Usage
 Use `incremental_stream` materialisation like dbt incremental model and replace 
 * `ref` by `stream_ref` macro to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a dbt model
-* or `source`by `stream_source` to reference an input source to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a source
+* or `source`by `stream_source` to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a source
 
 Exemple with ref
 ```
