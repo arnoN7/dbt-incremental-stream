@@ -1,2 +1,5 @@
 packages:
   - local: ../
+# In real projets replace 'local' by dbt-incremental-stream git repository with the lastest release 
+#  - git: "https://github.com/arnoN7/dbt-incremental-stream.git"
+#    revision: 0.0.1
