@@ -1,0 +1,22 @@
+name: 'incr_stream_integration_test'
+
+config-version: 2
+version: '0.0.1'
+
+profile: 'my-snowflake-db'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+docs-paths: ["docs"]
+
+models:
+  incr_stream_integration_test:
+    dwh:
+      +schema: DWH
+    stg:
+      +schema: STG
+
+vars:
+  # default number of fake clients to add
+  nb_clients: 30

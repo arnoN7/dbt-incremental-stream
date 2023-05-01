@@ -6,25 +6,6 @@ version: '0.0.1'
 profile: 'my-snowflake-db'
 
 model-paths: ["models"]
-analysis-paths: ["analyses"]
-test-paths: ["tests"]
-seed-paths: ["seeds"]
 macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
 
 docs-paths: ["docs"]
-asset-paths: ["assets"]
-
-models:
-  +persist_docs:
-    relation: true
-    columns: true
-  incr_stream:
-    dwh:
-      +schema: DWH
-    stg:
-      +schema: STG
-
-vars:
-  # default number of fake clients to add
-  nb_clients: 30

@@ -58,8 +58,45 @@ Exemple with source
 
 # Materialization
 Incremental materialization will perform the following tasks : 
-* Create `{{this}}` table `IF NOT EXISTS`
-* Create required stream `IF NOT EXISTS`
-* `CREATE OR REPLACE` a view to perform the transformation developped in the model 
-*  If stream is empty **materialization stops** and prevent `RESUME` of Snowflake Warehouse   
-* `MERGE` the view with `{{this}}` based on `unique_key` provided
+1. Create `{{this}}` table `IF NOT EXISTS`
+2. Create required stream `IF NOT EXISTS`
+3. `CREATE OR REPLACE` a view to perform the transformation developped in the model 
+4.  If stream is empty **materialization stops** and prevent Snowflake Warehouse `RESUME`  
+5. `MERGE` the view in `{{this}}` table based on `unique_key` provided
+
+
+# Working Example
+`/integration_test` contains a DBT project working example with two models.
+
+| model | description |
+|-------|-------------|
+| [add_clients](#add_clients-model) ([source](/integration_tests/models/stg/add_clients.py)) | Python 🐍 incremental model adding new random clients. To simulate a stream source like a Kafka topic |
+| [conso_clients](#conso_clients-model) ([source](/integration_tests/models/dwh/conso_client.sql)) | `incremental_stream` model de-duplicating clients on `ID` |
+![lineage](/readme/lineage.png)
+```
+# Create ADD_CLIENT source or add new random clients and merge it in CONSO_CLIENTS
+dbt run
+```
+
+## add_clients model
+Python 🐍 incremental model :
+1. Creating a `ADD_CLIENTS` table if not exists in a `STG` schema 
+2. And adding random clients using [Faker](https://faker.readthedocs.io/en/master/) library.
+
+## conso_clients model
+A sample model leveraging on `incremental_stream` custom materialization
+1. Collecting lastest data ingested in `add_clients`
+2. De-duplicating it based on `ID` with most recent `CREATED_AT` from `add_clients` stream or table
+3. `MERGE` data in `CONSO_CLIENTS` table with `ID` as unique key 
+
+>**Note** 
+>`nb_clients` [variable](https://docs.getdbt.com/docs/using-variables) define the default number of client added (default 30)
+
+**Sample commands** 
+```
+# Merge last clients inserted in add_clients model
+dbt run --select conso_clients
+
+# Drop CONSO_CLIENTS table and rebuild it based on ADD_CLIENTS table
+dbt run --select conso_clients --full-refresh
+```
