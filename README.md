@@ -121,3 +121,15 @@ dbt run --select conso_clients
 # Drop CONSO_CLIENTS table and rebuild it based on ADD_CLIENTS table
 dbt run --select conso_clients --full-refresh
 ```
+
+## Limitations
+
+Current known limitations : 
+* Only one input [stream](https://docs.snowflake.com/en/user-guide/streams-intro) can be used per model. Implementation can evolve to tackle the need if required
+* When `stream_ref` or `stream_source` is dropped and recreated [stream](https://docs.snowflake.com/en/user-guide/streams-intro) must be dropped. If not you will observe the following error
+```
+ 091901 (01000): Base table 'DB_NAME.SCH_NAME.XXX_TABLE' dropped, cannot read from stream 'S_YYY_XXX_TABLE' in line 1 position 21
+```
+
+## Credits
+Thanks to [jeremiahhansen ❄️](https://github.com/jeremiahhansen) for a first inspiring [implementation](https://github.com/jeremiahhansen/snowflake-helper-dbt) of streams & tasks on ❄️
