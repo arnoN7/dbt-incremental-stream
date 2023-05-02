@@ -132,4 +132,4 @@ Current known limitations :
 ```
 
 ## Credits
-Thanks to [jeremiahhansen ❄️](https://github.com/jeremiahhansen) for a first inspiring [implementation](https://github.com/jeremiahhansen/snowflake-helper-dbt) (done in 2020) of streams & tasks on Snowflake
+Thanks to [jeremiahhansen ❄️](https://github.com/jeremiahhansen) for the inspiring [implementation](https://github.com/jeremiahhansen/snowflake-helper-dbt) (done in 2020) of streams & tasks on Snowflake
