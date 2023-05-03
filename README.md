@@ -44,7 +44,7 @@ Exemple with source
 
 # Macros
 `stream_ref` and `stream_source` macro include created [streams](https://docs.snowflake.com/en/user-guide/streams-intro) in the compiled SQL code of the model. 
-* [Stream](https://docs.snowflake.com/en/user-guide/streams-intro) created in `{{this}}.database` and `{{this.schema}}`
+* [Stream](https://docs.snowflake.com/en/user-guide/streams-intro) created in `{{this}}.database` and `{{this}}.schema`
 * [Stream](https://docs.snowflake.com/en/user-guide/streams-intro) name follows this naming convention : `S_{{this.name}}_{{source_table_name}}`
 
 > **Note**
