@@ -32,13 +32,13 @@ DROP STREAM IF EXISTS {{target_stream}};
 {% endif %}
 {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
 CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} APPEND_ONLY=TRUE;
-CREATE OR REPLACE VIEW {{target_view}}
-    AS ({{ sql }});
 
 CREATE TABLE IF NOT EXISTS {{ this }} AS SELECT * FROM {{target_view}};
 
 {%- set v_count = 0 -%}
 {%- if full_refresh_mode %} 
+CREATE OR REPLACE VIEW {{target_view}}
+    AS ({{ sql }});
 INSERT INTO {{this}} SELECT * FROM {{target_view}};
 {%- else -%}
 {#-- Check the presence of records to merge --#}
@@ -59,6 +59,8 @@ INSERT INTO {{this}} SELECT * FROM {{target_view}};
 
 {#-- Execute Merge only if new records in stream  --#}
 {%- if v_count > 0  -%}
+CREATE OR REPLACE VIEW {{target_view}}
+    AS ({{ sql }});
     {%- set s_count = v_count | string() -%}
 
     {%- set columns = adapter.get_columns_in_relation(target_view) %}

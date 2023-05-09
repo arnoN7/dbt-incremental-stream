@@ -66,18 +66,23 @@ Incremental materialization will perform the following tasks :
 
 
 # Working Example
-`/integration_test` contains a DBT project working example with two models.
+`/integration_test` contains a working example with **two models and a test**:
+* To validate `incremental_stream` and `incremental` materialization produce the same output
+* To do performance test 
 
 | model | description |
 |-------|-------------|
 | [add_clients](#add_clients-model) ([source](/integration_tests/models/stg/add_clients.py)) | Python 🐍 incremental model adding new random clients. To simulate a stream source like a Kafka topic |
-| [conso_clients](#conso_clients-model) ([source](/integration_tests/models/dwh/conso_client.sql)) | `incremental_stream` model de-duplicating clients on `ID` |
+| [conso_client](#conso_client-model) ([source](/integration_tests/models/dwh/conso_client.sql)) | `incremental_stream` model de-duplicating clients on `ID` |
+| [conso_client_incr](#conso_client-model) ([source](/integration_tests/models/dwh/conso_client_incr.sql)) | standard dbt `incremental` model to compare result and performance |
 
 ![lineage](/readme/lineage.png)
 ```
-# Add 30 new random clients to ADD_CLIENTS table and merge it in CONSO_CLIENTS
+# 1. Add 30 new random clients to ADD_CLIENTS table 
+# 2. Merge it in CONSO_CLIENT and CONSO_CLIENT_INCR
+# 3. Test CONSO_CLIENT and CONSO_CLIENT_INCR equals
 cd ./integration_test
-dbt run
+dbt build
 ```
 
 ## add_clients model
@@ -107,7 +112,7 @@ dbt run --select add_clients --vars '{nb_clients: 100}'
 dbt run --select add_clients --full-refresh
 ```
 
-## conso_clients model
+## conso_client model
 A sample model leveraging on `incremental_stream` custom materialization
 1. Collecting lastest data ingested in [add_clients](#add_clients-model)
 2. De-duplicating it based on `ID` with most recent `CREATED_AT` from [add_clients](#add_clients-model) stream or table

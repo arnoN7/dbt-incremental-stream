@@ -5,8 +5,7 @@ from datetime import datetime
 
 def add_clients(session, nb, start):
     fake = Faker()
-    fake_client = [fake.first_name(), fake.last_name(), fake.date_of_birth(minimum_age=18, maximum_age=90)]
-    clients = [[value] + fake_client + [datetime.now()] for value in range(start, start + nb)]
+    clients = [[value] + [fake.first_name(), fake.last_name(), fake.date_of_birth(minimum_age=18, maximum_age=90)] + [datetime.now()] for value in range(start, start + nb)]
     df = session.create_dataframe(clients, schema=["ID", "FIRST_NAME", "LAST_NAME", "BIRTHDATE", "CREATED_AT"])
     return df
 
