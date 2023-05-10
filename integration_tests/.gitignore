@@ -4,4 +4,5 @@
 /profiles.yml
 /target
 /dbt_packages
-/snowflake_test_worsheet
+/snowflake_test_worksheet
+/datasets
