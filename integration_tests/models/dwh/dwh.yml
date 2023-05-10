@@ -18,7 +18,7 @@ models:
         description: Client last name
       - name: BIRTHDATE
         description: Client last name
-      - name: CREATED_AT
+      - name: LOADED_AT
         description: Last client update by source
   - name: conso_client_incr
     description: Same table compared to conso_client but feed by standard dbt incremental materialization
@@ -34,5 +34,5 @@ models:
         description: Client last name
       - name: BIRTHDATE
         description: Client last name
-      - name: CREATED_AT
+      - name: LOADED_AT
         description: Last client update by source

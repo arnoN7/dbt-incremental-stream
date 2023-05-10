@@ -91,7 +91,7 @@ Python 🐍 incremental model :
 2. And adding **random clients** using [Faker](https://faker.readthedocs.io/en/master/) library.
 
 **ADD_CLIENTS Table**
-| ID | FIRST_NAME  | LAST_NAME | BIRTHDATE  |    CREATED_AT     |
+| ID | FIRST_NAME  | LAST_NAME | BIRTHDATE  |    LOADED_AT     |
 |----|-------------|----------:|-----------:|------------------:|
 | 1  |     Amy     |  Patton   | 1985-10-08 |2023-04-28 15:01:10|
 | 2  |     Eric    |  Ferguson | 1973-09-15 |2023-04-28 15:01:10|
@@ -115,7 +115,7 @@ dbt run --select add_clients --full-refresh
 ## conso_client model
 A sample model leveraging on `incremental_stream` custom materialization
 1. Collecting lastest data ingested in [add_clients](#add_clients-model)
-2. De-duplicating it based on `ID` with most recent `CREATED_AT` from [add_clients](#add_clients-model) stream or table
+2. De-duplicating it based on `ID` with most recent `LOADED_AT` from [add_clients](#add_clients-model) stream or table
 3. `MERGE` data in `CONSO_CLIENTS` table with `ID` as unique key 
 
 **Sample commands** 
