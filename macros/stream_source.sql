@@ -9,16 +9,36 @@
 {%- endmacro -%}
 
 {%- macro stream_input(table_name, mode, source_name='') -%}
-    {%- set input_model = None -%}
-    {{- config.set('src_table', table_name) -}}
+    {%- set input_model = none -%}
+    {% set streams = [] %}
+    {{ log("HELLO", info=True) }}
+    {%- if config.get('streams') -%}
+        {{ log('streams initialized' , info=True) }}
+        {{ log(config.get('streams') , info=True) }}
+        {% set streams = config.get('streams') %}
+    {%- else -%}
+        {{ log('streams reset' , info=True) }}
+        {{- config.set('streams', streams) -}}
+        {{ log(config.get('streams') , info=True) }}
+    {%- endif -%} 
     {%- if mode == 'source' -%}
-        {{- config.set('src', source_name) -}}
+        {{ log(config.get('streams') , info=True) }}
+        {{ log('stream added' , info=True) }}
+        {{ streams.append([source_name, table_name]) | replace("None", "") }}
         {%- set input_model = source(source_name, table_name) -%}
     {%- else -%}
+        {{ log(config.get('streams') , info=True) }}
+        {{ log(streams , info=True) }}
+        {{ streams.append([none, table_name]) | replace("None", "") }}
+        {{ log('stream added' , info=True) }}
+        {{ log(config.get('streams') , info=True) }}
+        {{ log(streams , info=True) }}
         {%- set input_model = ref(table_name) -%}
     {%- endif -%}
+    {{- config.set('streams', streams) -}}
     {%- set input_database = input_model.database  -%}
     {%- set input_schema = input_model.schema  -%}
+    {{ log("schema "~input_schema~this.schema , info=True) }}
     {%- set full_refresh_mode = (flags.FULL_REFRESH == True) -%}
     {%- if full_refresh_mode -%}
         {{input_model}}

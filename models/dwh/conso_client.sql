@@ -1,7 +1,8 @@
 {{-
     config(
         materialized='incremental_stream',
-        unique_key=['ID']
+        unique_key=['ID'],
+        schema='DWH'
     )
 -}}
 with client_with_dup as (

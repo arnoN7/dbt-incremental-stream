@@ -9,52 +9,48 @@
 
 {%- macro merge_stream_sql(target_relation, src, unique_key, sql) -%}
 {%- set full_refresh_mode = (flags.FULL_REFRESH == True) -%}
+{% if full_refresh_mode -%} 
+DROP TABLE IF EXISTS {{ this }};
+{% endif %}
 
 {#-- Get parameter values --#}
-{%- set src = config.get('src') -%}
-{%- set src_table = config.get('src_table') -%}
-{%- set unique_key = config.get('unique_key') -%}
-
-{#-- Get the source & target table name --#}
-{%- if src -%} 
-    {%- set source_table = source(src,src_table) -%} 
+{%- set streams = config.get('streams') -%}
+{{ log("streams" , info=True) }}
+{%- set v_count = 1 -%}
+{% for source, src_table in streams  %}
+{{ log("source" ~src_table , info=True) }}
+{%- if source -%} 
+    {%- set source_table = source(source,src_table) -%}
 {%- else -%} 
     {%- set source_table = ref(src_table) -%} 
 {%- endif -%}
+    {%- set target_stream = this.database + '.' + this.schema + '.'+ incr_stream.get_stream_name(this.table, src_table) -%}
+    {% if full_refresh_mode %} 
+DROP STREAM IF EXISTS {{target_stream}};
+CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} APPEND_ONLY=TRUE;
+    {% endif  %}
+{% endfor %}
+
+
+{%- set unique_key = config.get('unique_key') -%}
 
 {%- set target_table = this.database + '.' + this.schema + '.' + this.name -%}
-{%- set target_stream = this.database + '.' + this.schema + '.'+ incr_stream.get_stream_name(this.table, src_table) -%}
 {%- set target_view = this.database + '.' + this.schema + '.V_' + this.name -%}
-{#-- Drop Target Table and Stream in full-refresh mode  --#}
-{% if full_refresh_mode -%} 
-DROP TABLE IF EXISTS {{ this }};
-DROP STREAM IF EXISTS {{target_stream}};
-{% endif %}
+
 {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
-CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} APPEND_ONLY=TRUE;
 
 CREATE TABLE IF NOT EXISTS {{ this }} AS SELECT * FROM {{target_view}};
 
-{%- set v_count = 0 -%}
+
 {%- if full_refresh_mode %} 
 CREATE OR REPLACE VIEW {{target_view}}
     AS ({{ sql }});
 INSERT INTO {{this}} SELECT * FROM {{target_view}};
 {%- else -%}
-{#-- Check the presence of records to merge --#}
-{%- set v_count -%}
-        select count(1) from {{ target_stream }}
-{%- endset -%}
-{%- set results = run_query(v_count) -%}
-
-{%- if execute -%}
-        {%- set v_count = results.columns[0].values()[0] -%}
-{%- else -%}
-        {%- set v_count = 0 -%}
-{%- endif -%}
 
 
-{{ log("  => " +v_count | string + " record(s) to merge" , info=True) }}
+
+{{ log("  ===> " +v_count | string + " record(s) to merge" , info=True) }}
 {%- endif -%}
 
 {#-- Execute Merge only if new records in stream  --#}
@@ -85,7 +81,7 @@ CREATE OR REPLACE VIEW {{target_view}}
     ;
     
 {%- else -%}
-    {{ log("  => No new data available in " + target_stream , info=True) }}
+    {{ log("  => No new data available in streams" , info=True) }}
 {%- endif -%}
 {%- endmacro %}
 

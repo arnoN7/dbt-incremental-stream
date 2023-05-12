@@ -9,3 +9,14 @@ model-paths: ["models"]
 macro-paths: ["macros"]
 
 docs-paths: ["docs"]
+
+models:
+  incr_stream:
+    dwh:
+      +schema: DWH
+    stg:
+      +schema: STG
+
+vars:
+  # default number of fake clients to add
+  nb_clients: 30
