@@ -27,8 +27,8 @@ DROP TABLE IF EXISTS {{ this }};
     {%- set target_stream = this.database + '.' + this.schema + '.'+ incr_stream.get_stream_name(this.table, src_table) -%}
     {% if full_refresh_mode %} 
 DROP STREAM IF EXISTS {{target_stream}};
-CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} APPEND_ONLY=TRUE;
     {% endif  %}
+CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} APPEND_ONLY=TRUE;
 {% endfor %}
 
 

@@ -9,4 +9,11 @@ models:
       materialized: incremental
       tags: ['python']
       nb_clients: "{{ var('nb_clients') }}"
+  - name: add_clients_web
+    description: Add random clients to ADD_CLIENTS_WEB table
 
+    # Configure in ways that feel intuitive and familiar
+    config:
+      materialized: incremental
+      tags: ['python']
+      nb_clients: "{{ var('nb_clients') }}"
