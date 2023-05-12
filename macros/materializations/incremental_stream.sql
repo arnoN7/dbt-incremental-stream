@@ -33,13 +33,12 @@ DROP STREAM IF EXISTS {{target_stream}};
 {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
 CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} APPEND_ONLY=TRUE;
 
-CREATE TABLE IF NOT EXISTS {{ this }} AS SELECT * FROM {{target_view}};
-
 {%- set v_count = 0 -%}
-{%- if full_refresh_mode %} 
+{% set relation_exists = load_relation(this) is not none %}
+{%- if full_refresh_mode or not relation_exists%} 
 CREATE OR REPLACE VIEW {{target_view}}
     AS ({{ sql }});
-INSERT INTO {{this}} SELECT * FROM {{target_view}};
+CREATE TABLE IF NOT EXISTS {{ this }} AS SELECT * FROM {{target_view}};
 {%- else -%}
 {#-- Check the presence of records to merge --#}
 {%- set v_count -%}
@@ -52,7 +51,6 @@ INSERT INTO {{this}} SELECT * FROM {{target_view}};
 {%- else -%}
         {%- set v_count = 0 -%}
 {%- endif -%}
-
 
 {{ log("  => " +v_count | string + " record(s) to merge" , info=True) }}
 {%- endif -%}
