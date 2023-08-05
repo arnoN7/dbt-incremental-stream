@@ -31,7 +31,7 @@ DROP TABLE IF EXISTS {{ this }};
 DROP STREAM IF EXISTS {{target_stream}};
 {% endif %}
 {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
-CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} APPEND_ONLY=TRUE;
+CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}};
 
 {%- set v_count = 0 -%}
 {% set relation_exists = load_relation(this) is not none %}
@@ -61,18 +61,24 @@ CREATE OR REPLACE VIEW {{target_view}}
     AS ({{ sql }});
     {%- set s_count = v_count | string() -%}
 
-    {%- set columns = adapter.get_columns_in_relation(target_view) %}
+    {%- set columns = adapter.get_columns_in_relation(target_view) | rejectattr('name', 'equalto', 'METADATA$ACTION')
+                | rejectattr('name', 'equalto', 'METADATA$ISUPDATE')
+                | rejectattr('name', 'equalto', 'METADATA$ROW_ID')
+                | list %}
     MERGE INTO  {{ this }} TARGET
     USING {{target_view}} SOURCE
     ON ({% for key in unique_key %}
     TARGET.{{ key }} = SOURCE.{{ key }}{%- if not loop.last %} AND {% endif %}{% endfor %}
     )
+    -- Mode DELETE
+    WHEN MATCHED AND SOURCE.METADATA$ACTION = 'DELETE' AND SOURCE.METADATA$ISUPDATE = 'FALSE' THEN
+        DELETE
     -- Mode UPDATE
-    WHEN MATCHED THEN UPDATE
-    SET {%- for col in columns %}
+    WHEN MATCHED AND SOURCE.METADATA$ACTION = 'INSERT' THEN 
+    UPDATE SET {%- for col in columns %}
     TARGET.{{col.name}} = SOURCE.{{col.name}}{%- if not loop.last %},{% endif %}{% endfor %}
     -- Mode INSERT
-    WHEN NOT MATCHED THEN INSERT
+    WHEN NOT MATCHED AND SOURCE.METADATA$ACTION = 'INSERT' THEN INSERT
     ( {% for col in columns%}
     {{col.name}}{%- if not loop.last %},{% endif %}{% endfor %}
     )
@@ -85,6 +91,43 @@ CREATE OR REPLACE VIEW {{target_view}}
 {%- else -%}
     {{ log("  => No new data available in " + target_stream , info=True) }}
 {%- endif -%}
+{%- endmacro %}
+
+{% macro sfc_get_stream_merge_sql(target_relation, source_relation, unique_key) -%}
+    {#-- Don't include the Snowflake Stream metadata columns --#}
+    {% set dest_columns = adapter.get_columns_in_relation(target_relation)
+                | rejectattr('name', 'equalto', 'METADATA$ACTION')
+                | rejectattr('name', 'equalto', 'METADATA$ISUPDATE')
+                | rejectattr('name', 'equalto', 'METADATA$ROW_ID')
+                | list %}
+    {% set dest_cols_csv =  get_quoted_csv(dest_columns | map(attribute="name")) -%}
+
+    MERGE INTO {{ target_relation }} T
+    USING {{ source_relation }} S
+
+    {% if unique_key -%}
+        ON (T.{{ unique_key }} = S.{{ unique_key }})
+    {% else -%}
+        ON FALSE
+    {% endif -%}
+
+    {% if unique_key -%}
+    WHEN MATCHED AND S.METADATA$ACTION = 'DELETE' AND S.METADATA$ISUPDATE = 'FALSE' THEN
+        DELETE
+    WHEN MATCHED AND S.METADATA$ACTION = 'INSERT' AND S.METADATA$ISUPDATE = 'TRUE' THEN
+        UPDATE SET
+        {% for column in dest_columns -%}
+            T.{{ adapter.quote(column.name) }} = S.{{ adapter.quote(column.name) }}
+            {% if not loop.last -%}, {% endif -%}
+        {% endfor -%}
+    {% endif -%}
+
+    WHEN NOT MATCHED AND S.METADATA$ACTION = 'INSERT' AND S.METADATA$ISUPDATE = 'FALSE' THEN
+        INSERT
+        ({{ dest_cols_csv }})
+        VALUES
+        ({{ dest_cols_csv }})
+
 {%- endmacro %}
 
 

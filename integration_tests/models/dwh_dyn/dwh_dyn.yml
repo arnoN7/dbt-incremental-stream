@@ -1,0 +1,22 @@
+version: 2
+
+models:
+  - name: conso_client_dyn
+    description: 'Same table compared to conso_client but supported by a dynamic table'
+    tests:
+      - dbt_utils.equality:
+          compare_model: ref('conso_client_incr')
+    columns:
+      - name: ID
+        description: Unique client ID
+        tests:
+          - unique
+          - not_null
+      - name: FIRST_NAME
+        description: Client first name
+      - name: LAST_NAME
+        description: Client last name
+      - name: BIRTHDATE
+        description: Client last name
+      - name: LOADED_AT
+        description: Last client update by source

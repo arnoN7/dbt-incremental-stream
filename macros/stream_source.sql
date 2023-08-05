@@ -30,3 +30,16 @@
 {%- macro get_stream_name(table_name, source_table_name) -%}
 {{- 'S_'~table_name~'_'~source_table_name -}}
 {%- endmacro -%}
+
+{%- macro get_stream_metadata_columns(alias) -%}
+{% set final_alias = '' -%}
+{% if alias -%}
+    {% set final_alias = alias + '.' -%}
+{% endif -%}
+{%- set full_refresh_mode = (flags.FULL_REFRESH == True) -%}
+{%- if full_refresh_mode -%}
+{# No metadata stream for full refresh #} 
+{%- else -%}
+,{{ final_alias }}METADATA$ACTION, {{ final_alias }}METADATA$ISUPDATE, {{ final_alias }}METADATA$ROW_ID
+{%- endif -%}
+{%- endmacro -%}
