@@ -12,6 +12,8 @@ docs-paths: ["docs"]
 
 models:
   incr_stream_integration_test:
+    dwh_insert:
+      +schema: DWH
     dwh_source:
       +schema: DWH
     dwh_ref:

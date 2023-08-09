@@ -65,6 +65,7 @@ CREATE OR REPLACE VIEW {{target_view}}
                 | rejectattr('name', 'equalto', 'METADATA$ISUPDATE')
                 | rejectattr('name', 'equalto', 'METADATA$ROW_ID')
                 | list %}
+    {%- if unique_key -%}
     MERGE INTO  {{ this }} TARGET
     USING {{target_view}} SOURCE
     ON ({% for key in unique_key %}
@@ -87,6 +88,18 @@ CREATE OR REPLACE VIEW {{target_view}}
     SOURCE.{{col.name}}{%- if not loop.last %},{% endif %}{% endfor %}
     )
     ;
+    {% else %}
+        begin transaction;
+        DELETE FROM {{ this }} WHERE ({% for col in columns%}
+        {{col.name}}{%- if not loop.last %},{% endif %}{% endfor %}) IN 
+        (SELECT {% for col in columns%} SOURCE.{{col.name}}{%- if not loop.last %},{% endif %}{% endfor %} 
+        FROM {{target_view}} SOURCE WHERE SOURCE.METADATA$ACTION = 'DELETE');
+        INSERT INTO {{ this }}  
+        SELECT {% for col in columns%}
+        SOURCE.{{col.name}}{%- if not loop.last %},{% endif %}{% endfor %} FROM {{target_view}} SOURCE WHERE SOURCE.METADATA$ACTION = 'INSERT';
+        COMMIT;
+    {%- endif -%}
+
     
 {%- else -%}
     {{ log("  => No new data available in " + target_stream , info=True) }}
