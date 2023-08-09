@@ -20,7 +20,8 @@
     {%- set input_database = input_model.database  -%}
     {%- set input_schema = input_model.schema  -%}
     {%- set full_refresh_mode = (flags.FULL_REFRESH == True) -%}
-    {%- if full_refresh_mode -%}
+    {% set relation_exists = load_relation(this) is not none %}
+    {%- if full_refresh_mode or not relation_exists -%}
         {{input_model}}
     {%- else -%}
         {{input_model | replace(input_database, this.database) | replace(input_schema, this.schema) | replace(table_name, incr_stream.get_stream_name(this.table, table_name))}}
@@ -37,7 +38,8 @@
     {% set final_alias = alias + '.' -%}
 {% endif -%}
 {%- set full_refresh_mode = (flags.FULL_REFRESH == True) -%}
-{%- if full_refresh_mode -%}
+{% set relation_exists = load_relation(this) is not none %}
+{%- if full_refresh_mode or not relation_exists -%}
 {# No metadata stream for full refresh #} 
 {%- else -%}
 ,{{ final_alias }}METADATA$ACTION, {{ final_alias }}METADATA$ISUPDATE, {{ final_alias }}METADATA$ROW_ID

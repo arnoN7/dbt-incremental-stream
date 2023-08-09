@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: SOURCE_CRM
+    database: PERSO  
+    schema: ARO_STG  
+    tables:
+      - name: SOURCE_CLIENTS
