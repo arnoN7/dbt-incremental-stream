@@ -89,15 +89,10 @@ CREATE OR REPLACE VIEW {{target_view}}
     )
     ;
     {% else %}
-        begin transaction;
-        DELETE FROM {{ this }} WHERE ({% for col in columns%}
-        {{col.name}}{%- if not loop.last %},{% endif %}{% endfor %}) IN 
-        (SELECT {% for col in columns%} SOURCE.{{col.name}}{%- if not loop.last %},{% endif %}{% endfor %} 
-        FROM {{target_view}} SOURCE WHERE SOURCE.METADATA$ACTION = 'DELETE');
         INSERT INTO {{ this }}  
         SELECT {% for col in columns%}
-        SOURCE.{{col.name}}{%- if not loop.last %},{% endif %}{% endfor %} FROM {{target_view}} SOURCE WHERE SOURCE.METADATA$ACTION = 'INSERT';
-        COMMIT;
+        SOURCE.{{col.name}}{%- if not loop.last %},{% endif %}{% endfor %} FROM {{target_view}} SOURCE WHERE SOURCE.METADATA$ACTION = 'INSERT' 
+        AND SOURCE.METADATA$ISUPDATE = 'FALSE';
     {%- endif -%}
 
     
@@ -105,44 +100,6 @@ CREATE OR REPLACE VIEW {{target_view}}
     {{ log("  => No new data available in " + target_stream , info=True) }}
 {%- endif -%}
 {%- endmacro %}
-
-{% macro sfc_get_stream_merge_sql(target_relation, source_relation, unique_key) -%}
-    {#-- Don't include the Snowflake Stream metadata columns --#}
-    {% set dest_columns = adapter.get_columns_in_relation(target_relation)
-                | rejectattr('name', 'equalto', 'METADATA$ACTION')
-                | rejectattr('name', 'equalto', 'METADATA$ISUPDATE')
-                | rejectattr('name', 'equalto', 'METADATA$ROW_ID')
-                | list %}
-    {% set dest_cols_csv =  get_quoted_csv(dest_columns | map(attribute="name")) -%}
-
-    MERGE INTO {{ target_relation }} T
-    USING {{ source_relation }} S
-
-    {% if unique_key -%}
-        ON (T.{{ unique_key }} = S.{{ unique_key }})
-    {% else -%}
-        ON FALSE
-    {% endif -%}
-
-    {% if unique_key -%}
-    WHEN MATCHED AND S.METADATA$ACTION = 'DELETE' AND S.METADATA$ISUPDATE = 'FALSE' THEN
-        DELETE
-    WHEN MATCHED AND S.METADATA$ACTION = 'INSERT' AND S.METADATA$ISUPDATE = 'TRUE' THEN
-        UPDATE SET
-        {% for column in dest_columns -%}
-            T.{{ adapter.quote(column.name) }} = S.{{ adapter.quote(column.name) }}
-            {% if not loop.last -%}, {% endif -%}
-        {% endfor -%}
-    {% endif -%}
-
-    WHEN NOT MATCHED AND S.METADATA$ACTION = 'INSERT' AND S.METADATA$ISUPDATE = 'FALSE' THEN
-        INSERT
-        ({{ dest_cols_csv }})
-        VALUES
-        ({{ dest_cols_csv }})
-
-{%- endmacro %}
-
 
 
 
