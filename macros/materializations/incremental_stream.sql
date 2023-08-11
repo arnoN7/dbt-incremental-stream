@@ -11,29 +11,36 @@
 {%- set full_refresh_mode = (flags.FULL_REFRESH == True) -%}
 
 {#-- Get parameter values --#}
-{%- set src = config.get('src') -%}
-{%- set src_table = config.get('src_table') -%}
+{%- set src_list = config.get('src_list') -%}
 {%- set unique_key = config.get('unique_key') -%}
-
-{#-- Get the source & target table name --#}
-{%- if src -%} 
-    {%- set source_table = source(src,src_table) -%} 
-{%- else -%} 
-    {%- set source_table = ref(src_table) -%} 
-{%- endif -%}
-
-{%- set target_table = this.database + '.' + this.schema + '.' + this.name -%}
-{%- set target_stream = this.database + '.' + this.schema + '.'+ incr_stream.get_stream_name(this.table, src_table) -%}
-{%- set target_view = this.database + '.' + this.schema + '.V_' + this.name -%}
-{#-- Drop Target Table and Stream in full-refresh mode  --#}
+{%- set streams = [] -%}
+{#-- Drop Target Table in full-refresh mode  --#}
 {% if full_refresh_mode -%} 
-DROP TABLE IF EXISTS {{ this }};
-DROP STREAM IF EXISTS {{target_stream}};
+    DROP TABLE IF EXISTS {{ this }};
 {% endif %}
-{#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
-CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}};
 
-{%- set v_count = 0 -%}
+{% for src in src_list %}
+    {#-- Get the source & target table name --#}
+    {%- set src_table = '' -%}
+    {%- if src[0] == 'source' -%} 
+        {%- set source_table = source(src[1], src[2]) -%} 
+    {%- else -%} 
+        {%- set source_table = ref(src[1]) -%} 
+    {%- endif -%}
+    {%- set target_table = this.database + '.' + this.schema + '.' + this.name -%}
+    {%- set target_stream = this.database + '.' + this.schema + '.'+ incr_stream.get_stream_name(this.table, source_table.name) -%}
+    {%- set _ = streams.append(target_stream) %}
+    {#-- Drop Stream in full-refresh mode  --#}
+    {% if full_refresh_mode -%} 
+        DROP STREAM IF EXISTS {{target_stream}};
+    {% endif %}
+    {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
+    CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}};
+{% endfor %}
+
+{%- set target_view = this.database + '.' + this.schema + '.V_' + this.name -%}
+
+{%- set is_data_in_streams = 0 -%}
 {% set relation_exists = load_relation(this) is not none %}
 {%- if full_refresh_mode or not relation_exists%} 
 CREATE OR REPLACE VIEW {{target_view}}
@@ -41,25 +48,32 @@ CREATE OR REPLACE VIEW {{target_view}}
 CREATE TABLE IF NOT EXISTS {{ this }} AS SELECT * FROM {{target_view}};
 {%- else -%}
 {#-- Check the presence of records to merge --#}
-{%- set v_count -%}
-        select count(1) from {{ target_stream }}
+{%- set is_data_in_streams -%}
+    select ({% for stream in streams %} 
+    system$stream_has_data('{{stream}}'){%- if not loop.last %} OR {% endif %}
+    {% endfor %})
 {%- endset -%}
-{%- set results = run_query(v_count) -%}
+{%- set results = run_query(is_data_in_streams) -%}
 
 {%- if execute -%}
-        {%- set v_count = results.columns[0].values()[0] -%}
+        {% if results|length > 0 %}
+        {%- set is_data_in_streams = results.columns[0].values()[0] -%}
+        {%- else -%}
+        {{ log("  => Expected streams not found " , info=True) }}
+        {%- set is_data_in_streams = False -%}
+        {%- endif -%}
 {%- else -%}
-        {%- set v_count = 0 -%}
+        {%- set is_data_in_streams = 0 -%}
 {%- endif -%}
 
-{{ log("  => " +v_count | string + " record(s) to merge" , info=True) }}
+
 {%- endif -%}
 
 {#-- Execute Merge only if new records in stream  --#}
-{%- if v_count > 0  -%}
+{%- if is_data_in_streams  -%}
+{{ log("  => record(s) to merge" , info=True) }}
 CREATE OR REPLACE VIEW {{target_view}}
     AS ({{ sql }});
-    {%- set s_count = v_count | string() -%}
 
     {%- set columns = adapter.get_columns_in_relation(target_view) | rejectattr('name', 'equalto', 'METADATA$ACTION')
                 | rejectattr('name', 'equalto', 'METADATA$ISUPDATE')
@@ -97,7 +111,7 @@ CREATE OR REPLACE VIEW {{target_view}}
 
     
 {%- else -%}
-    {{ log("  => No new data available in " + target_stream , info=True) }}
+    {{ log("  => No record(s) to merge input streams are empty " , info=True) }}
 {%- endif -%}
 {%- endmacro %}
 
