@@ -206,3 +206,28 @@ def test_multiple_streams_with_merge():
     result = subprocess.run(["dbt", "test", "--select", "conso_client_multiple_streams", "--target", "TEST"], capture_output=True, text=True)
     print(result.stdout)
     assert "Completed successfully" in result.stdout
+
+# Test if Snowflake Warehouse remains suspended if there is no data in a stream
+def test_finops_single_stream():
+    init_db_and_dbt()
+    con.cursor().execute("INSERT INTO {}.{}_STG.ADD_CLIENTS VALUES (0, 'JAMES', 'SMITH', '1988-03-15', \
+                         CURRENT_TIMESTAMP)".format(test_profile['database'],test_profile['schema']))
+    subprocess.run(["dbt", "run", "--select", "dwh_ref", "--target", "TEST"], capture_output=True, text=True)
+    con.cursor().execute("ALTER WAREHOUSE {} SUSPEND".format(test_profile['warehouse']))
+    subprocess.run(["dbt", "run", "--select", "conso_client", "--target", "TEST"], capture_output=True, text=True)
+    assert con.cursor().execute("SHOW WAREHOUSES LIKE '{}'".format(test_profile['warehouse'])).fetchone()[1] == 'SUSPENDED'
+
+# Test if Snowflake Warehouse remains suspended if there is no data in a streams
+def test_finops_multiple_stream():
+    init_db_and_dbt()
+    con.cursor().execute("INSERT INTO {}.{}_STG.ADD_CLIENTS VALUES (0, 'JAMES', 'SMITH', '1988-03-15', \
+                         CURRENT_TIMESTAMP)".format(test_profile['database'],test_profile['schema']))
+    subprocess.run(["dbt", "run", "--select", "dwh_multiple_streams", "--target", "TEST"], capture_output=True, text=True)
+    con.cursor().execute("INSERT INTO {}.{}_STG.ADD_CLIENTS_ VALUES (0, 'JULIA', 'HARISSON', '1972-10-13', \
+                         CURRENT_TIMESTAMP)".format(test_profile['database'],test_profile['schema']))
+    con.cursor().execute("INSERT INTO PERSO.ARO_STG.SOURCE_CLIENTS VALUES (0, 'RONALD', 'VADOR', '1960-12-12', CURRENT_TIMESTAMP)")
+    subprocess.run(["dbt", "run", "--select", "dwh_multiple_streams", "--target", "TEST"], capture_output=True, text=True)
+    con.cursor().execute("ALTER WAREHOUSE {} SUSPEND".format(test_profile['warehouse']))
+    subprocess.run(["dbt", "run", "--select", "conso_client_multiple_streams", "--target", "TEST"], capture_output=True, text=True)
+    assert con.cursor().execute("SHOW WAREHOUSES LIKE '{}'".format(test_profile['warehouse'])).fetchone()[1] == 'SUSPENDED'
+    
