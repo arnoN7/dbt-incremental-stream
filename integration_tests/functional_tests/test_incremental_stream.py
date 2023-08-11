@@ -3,6 +3,8 @@ import snowflake.connector
 import yaml
 import os
 import datetime
+from snowflake.connector import DictCursor
+
 
 profile_file = open("../profiles.yml", "r")
 test_profile = yaml.safe_load(profile_file)['my-snowflake-db']['outputs']['TEST']
@@ -215,7 +217,7 @@ def test_finops_single_stream():
     subprocess.run(["dbt", "run", "--select", "dwh_ref", "--target", "TEST"], capture_output=True, text=True)
     con.cursor().execute("ALTER WAREHOUSE {} SUSPEND".format(test_profile['warehouse']))
     subprocess.run(["dbt", "run", "--select", "conso_client", "--target", "TEST"], capture_output=True, text=True)
-    assert con.cursor().execute("SHOW WAREHOUSES LIKE '{}'".format(test_profile['warehouse'])).fetchone()[1] == 'SUSPENDED'
+    assert con.cursor(DictCursor).execute("SHOW WAREHOUSES LIKE '{}'".format(test_profile['warehouse'])).fetchone()['state'] == 'SUSPENDED'
 
 # Test if Snowflake Warehouse remains suspended if there is no data in a streams
 def test_finops_multiple_stream():
@@ -229,5 +231,5 @@ def test_finops_multiple_stream():
     subprocess.run(["dbt", "run", "--select", "dwh_multiple_streams", "--target", "TEST"], capture_output=True, text=True)
     con.cursor().execute("ALTER WAREHOUSE {} SUSPEND".format(test_profile['warehouse']))
     subprocess.run(["dbt", "run", "--select", "conso_client_multiple_streams", "--target", "TEST"], capture_output=True, text=True)
-    assert con.cursor().execute("SHOW WAREHOUSES LIKE '{}'".format(test_profile['warehouse'])).fetchone()[1] == 'SUSPENDED'
+    assert con.cursor(DictCursor).execute("SHOW WAREHOUSES LIKE '{}'".format(test_profile['warehouse'])).fetchone()['state'] == 'SUSPENDED'
     
