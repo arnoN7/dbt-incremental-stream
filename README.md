@@ -17,11 +17,9 @@ New to dbt packages? Read more about them [here](https://docs.getdbt.com/docs/bu
 Use `incremental_stream` materialisation like [dbt incremental model](https://docs.getdbt.com/docs/build/incremental-models) :
 * Replace `ref` by `stream_ref` macro to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a dbt model
 * Replace `source`by `stream_source` to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a source
-* `incr_stream.get_stream_metadata_columns()` must be included to retreive METADATA columns of each `STREAMS`. Hence the materialization can deal accordingly with the changes on inputs tables (`INSERT`, `UPDATE`, `DELETE`)
+* `incr_stream.get_stream_metadata_columns()` must be included to retreive METADATA columns of each `STREAMS`. Hence the materialization can deal accordingly with the changes on inputs tables (`INSERT`, `UPDATE`, `DELETE`) but Metadata columns (`METADATA$ACTION`, `METADATA$ISUPDATE`, `METADATA$ROW_ID`) will not be included in the model
 * Like in [dbt incremental model](https://docs.getdbt.com/docs/build/incremental-models#defining-a-unique-key-optional) `unique_key` optional parameter is supported. DBT will perform a `MERGE` with a unique_key an `INSERT` instead.
-
-> [!IMPORTANT]
-> Metadata columns (`METADATA$ACTION`, `METADATA$ISUPDATE`, `METADATA$ROW_ID`) will not be included in the model
+* Like in [dbt incremental model](https://docs.getdbt.com/docs/build/incremental-models#how-do-i-rebuild-an-incremental-model) `--full-refresh` rebuild the target model based on the source tables
 
 > [!NOTE]
 > `{{ incr_stream.get_stream_metadata_columns() }}` should not be included if `*` is used to get all the columns from the source like in the example below :  
@@ -79,6 +77,7 @@ Can be found in this test model: [conso_client_insert](/integration_tests/models
 
 ### Example performing UNION on multiple tables
 A test model [conso_client_multiple_streams.sql](/integration_tests/models/dwh_multiple_streams/conso_client_multiple_streams.sql) implementing this pattern can be found in the [integration_tests](/integration_tests/) sub DBT project included in the package.
+
 ![lineage_streams](/readme/multiple_streams.png)
 
 
@@ -108,17 +107,20 @@ Incremental materialization will perform the following tasks :
 
 
 # Working Example
-`/integration_test` contains a working example with **two models and a test**:
+`/integration_test` contains a working example with **models and a test**:
 * To validate `incremental_stream` and `incremental` materialization produce the same output
 * To do performance test 
 
 | model | description |
 |-------|-------------|
-| [add_clients](#add_clients-model) ([source](/integration_tests/models/stg/add_clients.py)) | Python 🐍 incremental model adding new random clients. To simulate a stream source like a Kafka topic |
+| [add_clients](#add_clients-model) ([source](/integration_tests/models/stg/add_clients.py)) and [add_clients_](#add_clients-model) ([source](/integration_tests/models/stg/add_clients_.py))| Python 🐍 incremental models adding new random clients. To simulate a stream source like a Kafka topic |
 | [conso_client](#conso_client-model) ([source](/integration_tests/models/dwh/conso_client.sql)) | `incremental_stream` model de-duplicating clients on `ID` |
-| [conso_client_incr](#conso_client-model) ([source](/integration_tests/models/dwh/conso_client_incr.sql)) | standard dbt `incremental` model to compare result and performance |
+| [conso_client_incr](#conso_client-model) ([source](/integration_tests/models/dwh/conso_client_incr.sql)) | standard dbt `incremental` model to compare result and performance | model to compare result and performance with `conso_client_insert` |
+
+And more to explore in sub DBT Project [integration_tests](/integration_tests/)
 
 ![lineage](/readme/lineage.png)
+
 ```
 # 1. Add 30 new random clients to ADD_CLIENTS table 
 # 2. Merge it in CONSO_CLIENT and CONSO_CLIENT_INCR
