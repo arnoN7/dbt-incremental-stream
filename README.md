@@ -107,7 +107,7 @@ Incremental materialization will perform the following tasks :
 
 
 # Working Example
-`/integration_test` contains a working example with **models and a test**:
+[integration_test](/integration_tests/) contains a working example with **models and a test**:
 * To validate `incremental_stream` and `incremental` materialization produce the same output
 * To do performance test 
 
