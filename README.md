@@ -13,41 +13,83 @@ New to dbt packages? Read more about them [here](https://docs.getdbt.com/docs/bu
 1. Include this package in your `packages.yml`. An example can be found [here](/integration_tests/packages.yml) in the [working example project](#working-example) 
 2. Run `dbt deps` 
 
-## Usage
-Use `incremental_stream` materialisation like dbt incremental model and replace 
-* `ref` by `stream_ref` macro to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a dbt model
-* or `source`by `stream_source` to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a source
+# Usage
+Use `incremental_stream` materialisation like [dbt incremental model](https://docs.getdbt.com/docs/build/incremental-models) :
+* Replace `ref` by `stream_ref` macro to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a dbt model
+* Replace `source`by `stream_source` to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a source
+* `incr_stream.get_stream_metadata_columns()` must be included to retreive METADATA columns of each `STREAMS`. Hence the materialization can deal accordingly with the changes on inputs tables (`INSERT`, `UPDATE`, `DELETE`)
+* Like in [dbt incremental model](https://docs.getdbt.com/docs/build/incremental-models#defining-a-unique-key-optional) `unique_key` optional parameter is supported. DBT will perform a `MERGE` with a unique_key an `INSERT` instead.
 
-Exemple with ref
+> [!IMPORTANT]
+> Metadata columns (`METADATA$ACTION`, `METADATA$ISUPDATE`, `METADATA$ROW_ID`) will not be included in the model
+
+> [!NOTE]
+> `{{ incr_stream.get_stream_metadata_columns() }}` should not be included if `*` is used to get all the columns from the source like in the example below :  
+> ```
+>{{-
+>    config(
+>        materialized='incremental_stream',
+>        unique_key=['ID']
+>    )
+>    select 
+>        *
+>    from incr_stream.stream_source('src', 'src_table')
+>-}}
+>```
+
+## Basic examples using one table as input
+### Example using a unique key and a ref
+A test model [conso_client.sql](/integration_tests/models/dwh_ref/conso_client.sql) following this pattern can be found in the [integration_tests](/integration_tests/) sub DBT project included in the package.
 ```
 {{-
     config(
         materialized='incremental_stream',
-        unique_key=['ID']
+        unique_key=['column1']
     )
-    select ...
+    select 
+        column1 as c_1,
+        ...,
+        columnN as c_n
+        {{ incr_stream.get_stream_metadata_columns() }}
     from incr_stream.stream_ref('input_model')
 -}}
 ```
+### Example using a unique key and a source
+A test model [conso_client_source.sql](/integration_tests/models/dwh_source/conso_client_source.sql) following this pattern can be found in the [integration_tests](/integration_tests/) sub DBT project included in the package.
 
 Exemple with source
 ```
 {{-
     config(
         materialized='incremental_stream',
-        unique_key=['ID']
+        unique_key=['column1']
     )
-    select ...
+    select 
+        column1 as c_1,
+
+        ...,
+        columnN as c_n
+        {{ incr_stream.get_stream_metadata_columns() }}
     from incr_stream.stream_source('src', 'src_table')
 -}}
 ```
+
+### Example not using a unique key
+Can be found in this test model: [conso_client_insert](/integration_tests/models/dwh_insert/conso_client_insert.sql)
+
+### Example performing UNION on multiple tables
+A test model [conso_client_multiple_streams.sql](/integration_tests/models/dwh_multiple_streams/conso_client_multiple_streams.sql) implementing this pattern can be found in the [integration_tests](/integration_tests/) sub DBT project included in the package.
+![lineage_streams](/readme/multiple_streams.png)
+
 
 # Macros
 `stream_ref` and `stream_source` macro include created [streams](https://docs.snowflake.com/en/user-guide/streams-intro) in the compiled SQL code of the model. 
 * [Stream](https://docs.snowflake.com/en/user-guide/streams-intro) created in `{{this}}.database` and `{{this}}.schema`
 * [Stream](https://docs.snowflake.com/en/user-guide/streams-intro) name follows this naming convention : `S_{{this.name}}_{{source_table_name}}`
+* `get_stream_metadata_columns` is used to easily retreive metadata columns from the stream (`METADATA$ACTION`, `METADATA$ISUPDATE`, `METADATA$ROW_ID`)
 
-> **Note**
+
+> [!NOTE]
 > When using `--full-refresh` flag, macros return `ref` and `source` (not streams) to perform a complete rebuild. 
 
 | macro | description |
@@ -97,7 +139,7 @@ Python 🐍 incremental model :
 | 2  |     Eric    |  Ferguson | 1973-09-15 |2023-04-28 15:01:10|
 | 3  |     Amy     |  Weston   | 1985-10-08 |2023-04-28 15:01:10|
 
->**Note** 
+> [!NOTE]
 >`nb_clients` [variable](https://docs.getdbt.com/docs/using-variables) defines the number of random clients to add (default 30)
 
 **Sample commands** 
@@ -130,11 +172,11 @@ dbt run --select conso_clients --full-refresh
 ## Limitations
 
 Current known limitations : 
-* Only one input [stream](https://docs.snowflake.com/en/user-guide/streams-intro) can be used per model. Implementation can evolve to tackle the need if required
-* When `stream_ref` or `stream_source` is dropped and recreated [stream](https://docs.snowflake.com/en/user-guide/streams-intro) must be dropped. If not you will observe the following error
+* When a `stream_ref` or a `stream_source` table is dropped and recreated [stream](https://docs.snowflake.com/en/user-guide/streams-intro) must be dropped. If not you will observe the following error
 ```
  091901 (01000): Base table 'DB_NAME.SCH_NAME.XXX_TABLE' dropped, cannot read from stream 'S_YYY_XXX_TABLE' in line 1 position 21
 ```
+* `on_schema_change` parameter might work in certain conditions but is not currently supported  
 
 ## Credits
 Thanks to [jeremiahhansen ❄️](https://github.com/jeremiahhansen) for the inspiring [implementation](https://github.com/jeremiahhansen/snowflake-helper-dbt) (done in 2020) of streams & tasks on Snowflake
