@@ -20,6 +20,10 @@ Use `incremental_stream` materialisation like [dbt incremental model](https://do
 * `incr_stream.get_stream_metadata_columns()` must be included to retreive METADATA columns of each `STREAMS`. Hence the materialization can deal accordingly with the changes on inputs tables (`INSERT`, `UPDATE`, `DELETE`) but Metadata columns (`METADATA$ACTION`, `METADATA$ISUPDATE`, `METADATA$ROW_ID`) will not be included in the model
 * Like in [dbt incremental model](https://docs.getdbt.com/docs/build/incremental-models#defining-a-unique-key-optional) `unique_key` optional parameter is supported. DBT will perform a `MERGE` with a unique_key an `INSERT` instead.
 * Like in [dbt incremental model](https://docs.getdbt.com/docs/build/incremental-models#how-do-i-rebuild-an-incremental-model) `--full-refresh` rebuild the target model based on the source tables
+* An optional dbt [Project Variable](https://docs.getdbt.com/docs/build/project-variables) can be added to create streams at a specific timestamp using [Snowflake Time Travel with Stream](https://docs.snowflake.com/en/sql-reference/sql/create-stream#using-time-travel-with-the-source-table). The below example shows how to force to recreate a given model and related streams (using `--full-refresh` option) at given TIMESTAMP using `--vars '{TIMESTAMP: 2024-04-13 00:00:00}'`. Date format is : `yyyy-mm-dd hh24:mi:ss`
+>```
+>dbt run --select 'conso_client_source'  --vars '{TIMESTAMP: 2024-04-13 00:00:00}' --full-refresh
+>``` 
 
 > [!NOTE]
 > `{{ incr_stream.get_stream_metadata_columns() }}` should not be included if `*` is used to get all the columns from the source like in the example below :  
