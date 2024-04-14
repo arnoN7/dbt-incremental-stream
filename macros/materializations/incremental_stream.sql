@@ -37,7 +37,7 @@
         DROP STREAM IF EXISTS {{target_stream}};
     {% endif %}
     {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
-    CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}};
+    CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%};
 {% endfor %}
 
 

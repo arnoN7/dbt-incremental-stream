@@ -9,6 +9,7 @@ model-paths: ["models"]
 test-paths: ["tests"]
 macro-paths: ["macros"]
 docs-paths: ["docs"]
+asset-paths: ["assets"]
 
 models:
   incr_stream_integration_test:
