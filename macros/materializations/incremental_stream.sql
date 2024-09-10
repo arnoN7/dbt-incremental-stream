@@ -16,6 +16,7 @@
 {% set grant_config = config.get('grants') %}
 {% set on_schema_change = incremental_validate_on_schema_change(config.get('on_schema_change'), default='ignore') %}
 {%- set streams = [] -%}
+{%- set materialization = 'table' -%}
 {#-- Drop Target Table in full-refresh mode  --#}
 {% if full_refresh_mode -%} 
     DROP TABLE IF EXISTS {{ target_relation }};
@@ -25,9 +26,12 @@
     {#-- Get the source & target table name --#}
     {%- set src_table = '' -%}
     {%- if src[0] == 'source' -%} 
-        {%- set source_table = source(src[1], src[2]) -%} 
-    {%- else -%} 
-        {%- set source_table = ref(src[1]) -%} 
+        {%- set source_table = load_relation(source(src[1], src[2])) -%}
+    {%- else -%}
+        {%- set source_table = load_relation(ref(src[1])) -%}
+    {%- endif -%}
+    {%- if source_table.is_view -%}
+      {%- set materialization = 'view' -%}
     {%- endif -%}
     {%- set target_table = target_relation.database + '.' + target_relation.schema + '.' + target_relation.name -%}
     {%- set target_stream = target_relation.database + '.' + target_relation.schema + '.'+ incr_stream.get_stream_name(target_relation.table, source_table.name) -%}
@@ -37,7 +41,7 @@
         DROP STREAM IF EXISTS {{target_stream}};
     {% endif %}
     {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
-    CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%};
+    CREATE STREAM IF NOT EXISTS {{target_stream}} ON {{materialization}} {{source_table}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%};
 {% endfor %}
 
 
