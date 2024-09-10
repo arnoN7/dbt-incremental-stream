@@ -49,11 +49,7 @@
 {%- set is_data_in_streams = 0 -%}
 {% set relation_exists = load_relation(target_relation) is not none %}
 {%- if full_refresh_mode or not relation_exists%}
-CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}})
-{%- if not relation_exists -%}
-WHERE FALSE
-{%- endif -%}
-;
+CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}});
 {%- else -%}
 {#-- Check the presence of records to merge --#}
 {%- set is_data_in_streams -%}
