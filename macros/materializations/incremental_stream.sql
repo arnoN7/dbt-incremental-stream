@@ -41,15 +41,20 @@
         DROP STREAM IF EXISTS {{target_stream}};
     {% endif %}
     {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
-    CREATE STREAM IF NOT EXISTS {{target_stream}} ON {{materialization}} {{source_table}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%};
+    CREATE STREAM IF NOT EXISTS {{target_stream}} ON {{materialization}} {{source_table.database}}.{{source_table.schema}}.{{source_table.identifier}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%};
 {% endfor %}
 
 
 
 {%- set is_data_in_streams = 0 -%}
 {% set relation_exists = load_relation(target_relation) is not none %}
-{%- if full_refresh_mode or not relation_exists%} 
-CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}});
+{%- if full_refresh_mode or not relation_exists%}
+{{ log("  => Full Refresh" , info=True) }}
+CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}})
+{%- if not relation_exists -%}
+WHERE FALSE
+{%- endif -%}
+;
 {%- else -%}
 {#-- Check the presence of records to merge --#}
 {%- set is_data_in_streams -%}
