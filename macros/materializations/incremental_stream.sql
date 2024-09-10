@@ -49,7 +49,6 @@
 {%- set is_data_in_streams = 0 -%}
 {% set relation_exists = load_relation(target_relation) is not none %}
 {%- if full_refresh_mode or not relation_exists%}
-{{ log("  => Full Refresh" , info=True) }}
 CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}})
 {%- if not relation_exists -%}
 WHERE FALSE
