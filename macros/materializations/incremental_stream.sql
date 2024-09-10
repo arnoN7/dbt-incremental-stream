@@ -37,7 +37,7 @@
     {%- set target_stream = target_relation.database + '.' + target_relation.schema + '.'+ incr_stream.get_stream_name(target_relation.table, source_table.name) -%}
     {%- set _ = streams.append(target_stream) %}
     {#-- Drop Stream in full-refresh mode  --#}
-    {% if full_refresh_mode -%} 
+    {% if full_refresh_mode -%}
         DROP STREAM IF EXISTS {{target_stream}};
     {% endif %}
     {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
