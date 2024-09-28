@@ -37,7 +37,10 @@
     {%- if full_refresh_mode or not relation_exists -%}
         {{input_model}}
     {%- else -%}
-        {{input_model | replace(input_database, this.database) | replace(input_schema, this.schema) | replace(table_name, incr_stream.get_stream_name(this.table, table_name))}}
+        {{ input_model 
+    | replace(input_database + '.' + input_schema + '.' + table_name, 
+              this.database + '.' + this.schema + '.' + incr_stream.get_stream_name(this.table, table_name)) }}
+
     {%- endif -%}
 {%- endmacro -%}
 
