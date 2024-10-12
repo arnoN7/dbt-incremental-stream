@@ -127,6 +127,18 @@ def test_incremental_messages_source():
     result = subprocess.run(["dbt", "run", "--select", "dwh_source", "--target", "TEST"], capture_output=True, text=True)
     assert "Completed successfully" in result.stdout 
 
+def test_incremental_messages_source_with_overlap():
+    init_db_and_dbt()
+    result = subprocess.run(["dbt", "run", "--select", "dwh_naming_overlap", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout
+    con.cursor().execute("INSERT INTO PERSO.ARO_STG.aro_stg_source_clients VALUES (0, 'JAMES', 'SMITH', '1988-03-16', CURRENT_TIMESTAMP)")
+    result = subprocess.run(["dbt", "run", "--select", "dwh_source", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout 
+    con.cursor().execute("INSERT INTO PERSO.ARO_STG.aro_stg_source_clients VALUES (1, 'ANNIE', 'SMITH', '1984-06-12', CURRENT_TIMESTAMP)")
+    result = subprocess.run(["dbt", "run", "--select", "dwh_naming_overlap", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout 
+
 def test_merge_update():
     init_db_and_dbt()
     con.cursor().execute("INSERT INTO {}.{}_STG.ADD_CLIENTS VALUES (0, 'JAMES', 'SMITH', '1988-03-16', \
