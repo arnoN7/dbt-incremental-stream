@@ -10,7 +10,8 @@ sources:
     database: PERSO  
     schema: PERSO_ARO_STG  
     tables:
-      - name: SOURCE_CLIENTS
+      - name: SOURCE_CLIENTS_CUSTOM_NAME
+        identifier: SOURCE_CLIENTS
   - name: SOURCE_CRM_SAME_NAME2
     database: PERSO  
     schema: ARO_STG  

@@ -30,7 +30,7 @@
         {%- set source_table = ref(src[1]) -%} 
     {%- endif -%}
     {%- set target_table = target_relation.database + '.' + target_relation.schema + '.' + target_relation.name -%}
-    {%- set target_stream = target_relation.database + '.' + target_relation.schema + '.'+ incr_stream.get_stream_name(target_relation.table, source_table.name) -%}
+    {%- set target_stream = target_relation.database + '.' + target_relation.schema + '.'+ incr_stream.get_stream_name(target_relation.table, source_table.identifier) -%}
     {%- set _ = streams.append(target_stream) %}
     {#-- Drop Stream in full-refresh mode  --#}
     {% if full_refresh_mode -%} 

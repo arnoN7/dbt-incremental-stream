@@ -1,10 +1,10 @@
 version: 2
 
 models:
-  - name: conso_client_source_overlap
+  - name: conso_client_source_identifier
     tests:
       - dbt_utils.equality:
-          compare_model: ref('conso_client_source_overlap_incr')
+          compare_model: ref('conso_client_source_identifier_incr')
     columns:
       - name: ID
         description: Unique client ID
@@ -19,7 +19,7 @@ models:
         description: Client last name
       - name: LOADED_AT
         description: Last client update by source
-  - name: conso_client_source_overlap_incr
+  - name: conso_client_source_identifier_incr
     description: Same table compared to conso_client but feed by standard dbt incremental materialization
     columns:
       - name: ID
