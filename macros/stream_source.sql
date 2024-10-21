@@ -29,6 +29,9 @@
         {%- set input_model = ref(table_name) -%}
         {{- incr_stream.unique_append(list_tables, ('ref', table_name))  -}}
     {%- endif -%}
+    {#-- Get the real table name if source or ref use an identifier or alias --#}
+    {%- set identifier = input_model.identifier -%}
+    {{ log(" identifier" +identifier, info=True) }}
     {{- config.set('src_list', list_tables) -}}
     {%- set input_database = input_model.database  -%}
     {%- set input_schema = input_model.schema  -%}
@@ -37,7 +40,9 @@
     {%- if full_refresh_mode or not relation_exists -%}
         {{input_model}}
     {%- else -%}
-        {{input_model | replace(input_database, this.database) | replace(input_schema, this.schema) | replace(table_name, incr_stream.get_stream_name(this.table, table_name))}}
+        {{ input_model 
+    | replace(input_database + '.' + input_schema + '.' + identifier, 
+              this.database + '.' + this.schema + '.' + incr_stream.get_stream_name(this.table, identifier)) }}
     {%- endif -%}
 {%- endmacro -%}
 

@@ -125,7 +125,54 @@ def test_incremental_messages_source():
     assert "Completed successfully" in result.stdout 
     con.cursor().execute("INSERT INTO PERSO.ARO_STG.SOURCE_CLIENTS VALUES (1, 'ANNIE', 'SMITH', '1984-06-12', CURRENT_TIMESTAMP)")
     result = subprocess.run(["dbt", "run", "--select", "dwh_source", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout
+    result = subprocess.run(["dbt", "test", "--select", "dwh_source", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout
+
+def test_incremental_messages_source_with_overlap():
+    init_db_and_dbt()
+    result = subprocess.run(["dbt", "run", "--select", "dwh_naming_overlap", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout
+    con.cursor().execute("INSERT INTO PERSO.ARO_STG.aro_stg_source_clients VALUES (0, 'JAMES', 'SMITH', '1988-03-16', CURRENT_TIMESTAMP)")
+    result = subprocess.run(["dbt", "run", "--select", "dwh_source", "--target", "TEST"], capture_output=True, text=True)
     assert "Completed successfully" in result.stdout 
+    con.cursor().execute("INSERT INTO PERSO.ARO_STG.aro_stg_source_clients VALUES (1, 'ANNIE', 'SMITH', '1984-06-12', CURRENT_TIMESTAMP)")
+    result = subprocess.run(["dbt", "run", "--select", "dwh_naming_overlap", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout 
+    result = subprocess.run(["dbt", "test", "--select", "dwh_naming_overlap", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout 
+
+def test_incremental_messages_source_with_identifier():
+    init_db_and_dbt()
+    result = subprocess.run(["dbt", "run", "--select", "dwh_source_identifier", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout
+    con.cursor().execute("INSERT INTO PERSO.PERSO_ARO_STG.SOURCE_CLIENTS VALUES (0, 'JAMES', 'SMITH', '1988-03-16', CURRENT_TIMESTAMP)")
+    result = subprocess.run(["dbt", "run", "--select", "dwh_source_identifier", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout 
+    con.cursor().execute("INSERT INTO PERSO.PERSO_ARO_STG.SOURCE_CLIENTS VALUES (1, 'ANNIE', 'SMITH', '1984-06-12', CURRENT_TIMESTAMP)")
+    result = subprocess.run(["dbt", "run", "--select", "dwh_source_identifier", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout 
+    result = subprocess.run(["dbt", "test", "--select", "dwh_source_identifier", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout 
+
+def test_incremental_messages_view():
+    init_db_and_dbt()
+    result = subprocess.run(["dbt", "run", "--select", "dwh_view", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout
+    con.cursor().execute("INSERT INTO PERSO.ARO_STG.SOURCE_CLIENTS VALUES (0, 'JAMES', 'SMITH', '1988-03-16', CURRENT_TIMESTAMP)")
+    result = subprocess.run(["dbt", "run", "--select", "conso_client_view", "conso_client_view_incr", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout 
+    con.cursor().execute("INSERT INTO PERSO.ARO_STG.SOURCE_CLIENTS VALUES (1, 'ANNIE', 'SMITH', '1984-06-12', CURRENT_TIMESTAMP)")
+    result = subprocess.run(["dbt", "run", "--select", "conso_client_view", "conso_client_view_incr", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout 
+    result = subprocess.run(["dbt", "test", "--select", "dwh_view", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout 
+
+
 
 def test_merge_update():
     init_db_and_dbt()
