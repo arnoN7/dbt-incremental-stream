@@ -37,7 +37,14 @@
         DROP STREAM IF EXISTS {{target_stream}};
     {% endif %}
     {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
-    CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%};
+    {%- set source_type = 'TABLE' -%}
+    {%- set relation_source = load_relation(source_table) -%}
+    {%- if relation_source.is_table -%}
+        {%- set source_type = 'TABLE' -%}
+    {%- elif relation_source.is_view -%}
+        {%- set source_type = 'VIEW' -%}
+    {%- endif -%}
+    CREATE STREAM IF NOT EXISTS {{target_stream}} ON {{source_type}} {{source_table}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%};
 {% endfor %}
 
 
