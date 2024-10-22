@@ -143,8 +143,11 @@ CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}});
         {{ build_sql }}
     {%- endcall -%}
 
+    {{ run_hooks(post_hooks, inside_transaction=True) }}
+
     -- `COMMIT` happens here
     {{ adapter.commit() }}
+
     {{ run_hooks(post_hooks, inside_transaction=False) }}
     {% do drop_relation_if_exists(tmp_relation) %}
 
