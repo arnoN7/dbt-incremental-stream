@@ -173,7 +173,6 @@ def test_incremental_messages_view():
     assert "Completed successfully" in result.stdout 
 
 
-
 def test_merge_update():
     init_db_and_dbt()
     con.cursor().execute("INSERT INTO {}.{}_STG.ADD_CLIENTS VALUES (0, 'JAMES', 'SMITH', '1988-03-16', \
@@ -204,6 +203,22 @@ def test_merge_delete():
     assert con.cursor().execute("SELECT COUNT(*) FROM \
                                 {}.{}_DWH.CONSO_CLIENT".format(test_profile['database'],
                                                                test_profile['schema'])).fetchone()[0] == 1
+
+def test_hooks():
+    init_db_and_dbt()
+    con.cursor().execute("INSERT INTO {}.{}_STG.ADD_CLIENTS VALUES (0, 'JAMES', 'SMITH', '1988-03-16', \
+                         CURRENT_TIMESTAMP)".format(test_profile['database'],test_profile['schema']))
+    con.cursor().execute("INSERT INTO {}.{}_STG.ADD_CLIENTS VALUES (1, 'ANNIE', 'SMITH', '1984-06-12', \
+                         CURRENT_TIMESTAMP)".format(test_profile['database'],test_profile['schema']))
+    result = subprocess.run(["dbt", "run", "--select", "dwh_hooks", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout
+    assert con.cursor().execute("SELECT COUNT(*) FROM \
+                                {}.{}_DWH.pre_hook_test".format(test_profile['database'],
+                                                               test_profile['schema'])).fetchone()[0] == 1
+    assert con.cursor().execute("SELECT COUNT(*) FROM \
+                                {}.{}_DWH.post_hook_test".format(test_profile['database'],
+                                                                test_profile['schema'])).fetchone()[0] == 1
     
 def test_insert_without_key():
     init_db_and_dbt()
