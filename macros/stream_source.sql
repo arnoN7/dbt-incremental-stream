@@ -30,24 +30,34 @@
         {{- incr_stream.unique_append(list_tables, ('ref', table_name))  -}}
     {%- endif -%}
     {#-- Get the real table name if source or ref use an identifier or alias --#}
-    {%- set identifier = input_model.identifier -%}
-    {{ log(" identifier" +identifier, info=True) }}
     {{- config.set('src_list', list_tables) -}}
-    {%- set input_database = input_model.database  -%}
-    {%- set input_schema = input_model.schema  -%}
     {%- set full_refresh_mode = (flags.FULL_REFRESH == True) -%}
     {% set relation_exists = load_relation(this) is not none %}
     {%- if full_refresh_mode or not relation_exists -%}
         {{input_model}}
     {%- else -%}
         {{ input_model 
-    | replace(input_database + '.' + input_schema + '.' + identifier, 
-              this.database + '.' + this.schema + '.' + incr_stream.get_stream_name(this.table, identifier)) }}
+    | replace(input_model, 
+              this.include(identifier=false) | string + '.' + incr_stream.get_stream_name(this.include(database=false, schema=false), input_model.include(database=false, schema=false))) }}
     {%- endif -%}
 {%- endmacro -%}
 
 {%- macro get_stream_name(table_name, source_table_name) -%}
-{{- 'S_'~table_name~'_'~source_table_name -}}
+{%- set is_quoted = false -%}
+{%- if '"' in table_name -%}
+    {%- set is_quoted = true -%}
+    {%- set table_name = table_name[1:-1]  -%}
+{%- endif -%}
+{%- if '"' in source_table_name -%}
+    {%- set is_quoted = true -%}
+    {%- set source_table_name = source_table_name[1:-1]  -%}
+{%- endif -%}
+
+{%- if is_quoted == true -%}
+    {{- '"S_'~table_name~'_'~source_table_name~'"' -}}
+{%- else -%}
+    {{- 'S_'~table_name~'_'~source_table_name -}}
+{%- endif -%}
 {%- endmacro -%}
 
 {%- macro get_stream_metadata_columns(alias) -%}
