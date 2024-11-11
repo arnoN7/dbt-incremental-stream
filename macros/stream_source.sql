@@ -36,13 +36,13 @@
     {%- if full_refresh_mode or not relation_exists -%}
         {{input_model}}
     {%- else -%}
-        {{ input_model 
-    | replace(input_model, 
-              this.include(identifier=false) | string + '.' + incr_stream.get_stream_name(this.include(database=false, schema=false), input_model.include(database=false, schema=false))) }}
+        {{ this.include(identifier=false) | string + '.' + incr_stream.get_stream_name(this.include(database=false, schema=false), input_model.include(database=false, schema=false)) }} 
     {%- endif -%}
 {%- endmacro -%}
 
 {%- macro get_stream_name(table_name, source_table_name) -%}
+{%- set table_name = table_name | string -%}
+{%- set source_table_name = source_table_name | string -%}
 {%- set is_quoted = false -%}
 {%- if '"' in table_name -%}
     {%- set is_quoted = true -%}
