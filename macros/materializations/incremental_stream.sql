@@ -25,14 +25,14 @@
 {% for src in src_list %}
     {#-- Get the source & target table name --#}
     {%- set src_table = '' -%}
-    {%- if src[0] == 'source' -%} 
-        {%- set source_table = load_relation(source(src[1], src[2])) -%}
+    {%- if src['mode'] == 'source' -%} 
+        {%- set source_table = load_relation(source(src['source_name'], src['table_name'])) -%}
         {#-- to avoid quoted tables --#}
-        {%- set source_table_raw = source(src[1], src[2]) -%}
+        {%- set source_table_raw = source(src['source_name'], src['table_name']) -%}
     {%- else -%}
-        {%- set source_table = load_relation(ref(src[1])) -%}
+        {%- set source_table = load_relation(ref(src['table_name'])) -%}
         {#-- to avoid quoted tables --#}
-        {%- set source_table_raw = ref(src[1]) -%}
+        {%- set source_table_raw = ref(src['table_name']) -%}
     {%- endif -%}
     {%- if source_table.is_view -%}
       {%- set materialization = 'view' -%}
@@ -45,7 +45,8 @@
         DROP STREAM IF EXISTS {{target_stream}};
     {% endif %}
     {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
-    CREATE STREAM IF NOT EXISTS {{target_stream}} ON {{materialization}} {{source_table_raw}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%};
+    {%- set stream_type = src['stream_type'] | upper -%}
+    CREATE STREAM IF NOT EXISTS {{target_stream}} ON {{materialization}} {{source_table_raw}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%}{%- if stream_type in ['APPEND_ONLY', 'INSERT_ONLY'] %} {{stream_type}} = TRUE{%- endif -%};
 {% endfor %}
 
 

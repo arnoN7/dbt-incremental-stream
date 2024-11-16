@@ -1,11 +1,11 @@
 {#-- Return stream name or source name in full-refresh mode --#}
-{%- macro stream_source(source_name, table_name) -%}
-    {{incr_stream.stream_input(table_name, 'source', source_name=source_name)}}
+{%- macro stream_source(source_name, table_name, stream_type='STANDARD') -%}
+    {{incr_stream.stream_input(table_name, 'source', stream_type, source_name=source_name)}}
 {%- endmacro -%}
 
 {#-- Return stream name or ref name in full-refresh mode --#}
-{%- macro stream_ref(model_name) -%}
-    {{incr_stream.stream_input(model_name, 'ref')}}
+{%- macro stream_ref(model_name, stream_type='STANDARD') -%}
+    {{incr_stream.stream_input(model_name, 'ref', stream_type)}}
 {%- endmacro -%}
 
 {% macro unique_append(list_to_modify, object_to_append) %}
@@ -14,7 +14,7 @@
     {%- endif -%}
 {% endmacro %}
 
-{%- macro stream_input(table_name, mode, source_name='') -%}
+{%- macro stream_input(table_name, mode, stream_type, source_name='') -%}
     {%- set input_model = None -%}
     {{- config.set('src_table', table_name) -}}
     {%- set list_tables = [] -%}
@@ -23,11 +23,11 @@
     {%- endif -%}
     {%- if mode == 'source' -%}
         {{- config.set('src', source_name) -}}
-        {{- incr_stream.unique_append(list_tables, ('source', source_name, table_name))  -}}
+        {{- incr_stream.unique_append(list_tables, {'mode':'source', 'stream_type':stream_type, 'source_name':source_name, 'table_name':table_name})  -}}
         {%- set input_model = source(source_name, table_name) -%}
     {%- else -%}
         {%- set input_model = ref(table_name) -%}
-        {{- incr_stream.unique_append(list_tables, ('ref', table_name))  -}}
+        {{- incr_stream.unique_append(list_tables, {'mode':'ref', 'stream_type':stream_type, 'table_name':table_name})  -}}
     {%- endif -%}
     {#-- Get the real table name if source or ref use an identifier or alias --#}
     {{- config.set('src_list', list_tables) -}}

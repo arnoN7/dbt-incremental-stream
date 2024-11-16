@@ -203,6 +203,41 @@ def test_merge_delete():
     assert con.cursor().execute("SELECT COUNT(*) FROM \
                                 {}.{}_DWH.CONSO_CLIENT".format(test_profile['database'],
                                                                test_profile['schema'])).fetchone()[0] == 1
+    
+def test_merge_delete_append_only():
+    init_db_and_dbt()
+    # Simulating data insertion in a 'ref' table
+    con.cursor().execute("INSERT INTO {}.{}_STG.ADD_CLIENTS VALUES (0, 'JAMES', 'SMITH', '1988-03-16', \
+                         CURRENT_TIMESTAMP)".format(test_profile['database'],test_profile['schema']))
+    con.cursor().execute("INSERT INTO {}.{}_STG.ADD_CLIENTS VALUES (1, 'ANNIE', 'SMITH', '1984-06-12', \
+                         CURRENT_TIMESTAMP)".format(test_profile['database'],test_profile['schema']))
+    # Simulating data insertion in a 'source' table
+    con.cursor().execute("INSERT INTO PERSO.ARO_STG.SOURCE_CLIENTS VALUES (0, 'JAMES', 'SMITH', '1988-03-16', CURRENT_TIMESTAMP)")
+    con.cursor().execute("INSERT INTO PERSO.ARO_STG.SOURCE_CLIENTS VALUES (1, 'ANNIE', 'SMITH', '1984-06-12', CURRENT_TIMESTAMP)")
+    # Run dbt to merge data from 'ref' and 'source' tables on APPEND_ONLY stream
+    result = subprocess.run(["dbt", "run", "--select", "dwh_append_only", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout
+    # Check if data is inserted in the target table
+    assert con.cursor().execute("SELECT COUNT(*) FROM \
+                                {}.{}_DWH.CONSO_CLIENT_APPEND_ONLY".format(test_profile['database'],
+                                                               test_profile['schema'])).fetchone()[0] == 2
+    assert con.cursor().execute("SELECT COUNT(*) FROM \
+                                {}.{}_DWH.CONSO_CLIENT_SOURCE_APPEND_ONLY".format(test_profile['database'],
+                                                               test_profile['schema'])).fetchone()[0] == 2
+    # Delete a record from 'ref' and 'source' table
+    con.cursor().execute("DELETE FROM {}.{}_STG.ADD_CLIENTS WHERE ID=1".format(test_profile['database'],test_profile['schema']))
+    con.cursor().execute("DELETE FROM PERSO.ARO_STG.SOURCE_CLIENTS WHERE ID=1")
+    result = subprocess.run(["dbt", "run", "--select", "dwh_append_only", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout
+    # Check if data is not deleted from the target table as it is an APPEND_ONLY stream
+    assert con.cursor().execute("SELECT COUNT(*) FROM \
+                                {}.{}_DWH.CONSO_CLIENT_APPEND_ONLY".format(test_profile['database'],
+                                                               test_profile['schema'])).fetchone()[0] == 2
+    assert con.cursor().execute("SELECT COUNT(*) FROM \
+                                {}.{}_DWH.CONSO_CLIENT_SOURCE_APPEND_ONLY".format(test_profile['database'],
+                                                               test_profile['schema'])).fetchone()[0] == 2
 
 def test_hooks():
     init_db_and_dbt()

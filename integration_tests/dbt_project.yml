@@ -33,6 +33,8 @@ models:
       +schema: DWH
     dwh_view:
       +schema: DWH
+    dwh_append_only:
+      +schema: DWH
 
 vars:
   # default number of fake clients to add

@@ -1,0 +1,30 @@
+version: 2
+
+models:
+  - name: conso_client_append_only
+    columns:
+      - name: ID
+        description: Unique client ID
+        tests:
+          - unique
+          - not_null
+      - name: FIRST_NAME
+        description: Client first name
+      - name: LAST_NAME
+        description: Client last name
+      - name: BIRTHDATE
+        description: Client last name
+      - name: LOADED_AT
+        description: Last client update by source
+  - name: conso_client_source_append_only
+    columns:
+      - name: ID
+        description: Unique client ID
+      - name: FIRST_NAME
+        description: Client first name
+      - name: LAST_NAME
+        description: Client last name
+      - name: BIRTHDATE
+        description: Client last name
+      - name: LOADED_AT
+        description: Last client update by source
