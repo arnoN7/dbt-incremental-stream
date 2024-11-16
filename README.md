@@ -119,7 +119,7 @@ A test model [conso_client_multiple_streams.sql](/integration_tests/models/dwh_m
 | `stream_source` ([source](macros/stream_source.sql)) | Replace `source` by the stream name (if not `--full-refresh` flag) |
 
 > [!NOTE]
-> An optional parameter `stream_type`  can be defined for both macros to specify the Snowflake [stream type](https://docs.snowflake.com/en/user-guide/streams-intro#types-of-streams). 
+> An optional argument `stream_type` can be defined for both macros to specify the Snowflake [stream type](https://docs.snowflake.com/en/user-guide/streams-intro#types-of-streams). 
 
 
 # Materialization
