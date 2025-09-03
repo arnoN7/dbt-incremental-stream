@@ -9,3 +9,4 @@
 /integration_tests/functional_tests/.pytest_cache
 /integration_tests/unit_tests/__pycache__/
 integration_tests/package-lock.yml
+/.env
