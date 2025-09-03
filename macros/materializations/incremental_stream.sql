@@ -16,6 +16,7 @@
 {% set grant_config = config.get('grants') %}
 {% set on_schema_change = incremental_validate_on_schema_change(config.get('on_schema_change'), default='ignore') %}
 {%- set streams = [] -%}
+{%- set materialization = 'table' -%}
 {#-- Drop Target Table in full-refresh mode  --#}
 {% if full_refresh_mode -%} 
     DROP TABLE IF EXISTS {{ target_relation }};
@@ -24,27 +25,35 @@
 {% for src in src_list %}
     {#-- Get the source & target table name --#}
     {%- set src_table = '' -%}
-    {%- if src[0] == 'source' -%} 
-        {%- set source_table = source(src[1], src[2]) -%} 
-    {%- else -%} 
-        {%- set source_table = ref(src[1]) -%} 
+    {%- if src['mode'] == 'source' -%} 
+        {%- set source_table = load_relation(source(src['source_name'], src['table_name'])) -%}
+        {#-- to avoid quoted tables --#}
+        {%- set source_table_raw = source(src['source_name'], src['table_name']) -%}
+    {%- else -%}
+        {%- set source_table = load_relation(ref(src['table_name'])) -%}
+        {#-- to avoid quoted tables --#}
+        {%- set source_table_raw = ref(src['table_name']) -%}
     {%- endif -%}
-    {%- set target_table = target_relation.database + '.' + target_relation.schema + '.' + target_relation.name -%}
-    {%- set target_stream = target_relation.database + '.' + target_relation.schema + '.'+ incr_stream.get_stream_name(target_relation.table, source_table.name) -%}
+    {%- if source_table.is_view -%}
+      {%- set materialization = 'view' -%}
+    {%- endif -%}
+    {%- set target_table = target_relation -%}
+    {%- set target_stream = target_relation.include(identifier=false) | string + '.'+ incr_stream.get_stream_name(target_relation.include(database=false, schema=false) | string, source_table_raw.include(database=false, schema=false) | string) -%}
     {%- set _ = streams.append(target_stream) %}
     {#-- Drop Stream in full-refresh mode  --#}
-    {% if full_refresh_mode -%} 
+    {% if full_refresh_mode -%}
         DROP STREAM IF EXISTS {{target_stream}};
     {% endif %}
     {#-- CREATE OBJECTS (STREAM, TABLE) IF NOT EXISTS  --#}
-    CREATE STREAM IF NOT EXISTS {{target_stream}} ON TABLE {{source_table}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%};
+    {%- set stream_type = src['stream_type'] | upper -%}
+    CREATE STREAM IF NOT EXISTS {{target_stream}} ON {{materialization}} {{source_table_raw}} {%- if var('TIMESTAMP', False) %} AT (TIMESTAMP => TO_TIMESTAMP_TZ('{{var('TIMESTAMP')}}', 'yyyy-mm-dd hh24:mi:ss')){%- endif -%}{%- if stream_type in ['APPEND_ONLY', 'INSERT_ONLY'] %} {{stream_type}} = TRUE{%- endif -%};
 {% endfor %}
 
 
 
 {%- set is_data_in_streams = 0 -%}
 {% set relation_exists = load_relation(target_relation) is not none %}
-{%- if full_refresh_mode or not relation_exists%} 
+{%- if full_refresh_mode or not relation_exists%}
 CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}});
 {%- else -%}
 {#-- Check the presence of records to merge --#}
@@ -139,8 +148,11 @@ CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}});
         {{ build_sql }}
     {%- endcall -%}
 
+    {{ run_hooks(post_hooks, inside_transaction=True) }}
+
     -- `COMMIT` happens here
     {{ adapter.commit() }}
+
     {{ run_hooks(post_hooks, inside_transaction=False) }}
     {% do drop_relation_if_exists(tmp_relation) %}
 

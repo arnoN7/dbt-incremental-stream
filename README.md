@@ -56,6 +56,24 @@ A test model [conso_client.sql](/integration_tests/models/dwh_ref/conso_client.s
     from incr_stream.stream_ref('input_model')
 -}}
 ```
+
+### Example using a unique key and a ref and a APPEND_ONLY stream
+A test model [conso_client_append_only.sql](/integration_tests/models/dwh_append_only/conso_client_append_only.sql) following this pattern can be found in the [integration_tests](/integration_tests/) sub DBT project included in the package.
+```
+{{-
+    config(
+        materialized='incremental_stream',
+        unique_key=['column1']
+    )
+    select 
+        column1 as c_1,
+        ...,
+        columnN as c_n
+        {{ incr_stream.get_stream_metadata_columns() }}
+    from incr_stream.stream_ref('input_model', stream_type='APPEND_ONLY')
+-}}
+```
+
 ### Example using a unique key and a source
 A test model [conso_client_source.sql](/integration_tests/models/dwh_source/conso_client_source.sql) following this pattern can be found in the [integration_tests](/integration_tests/) sub DBT project included in the package.
 
@@ -99,6 +117,9 @@ A test model [conso_client_multiple_streams.sql](/integration_tests/models/dwh_m
 |-------|-------------|
 | `stream_ref` ([source](macros/stream_source.sql)) | Replace `ref` by the stream name (if not `--full-refresh` flag) |
 | `stream_source` ([source](macros/stream_source.sql)) | Replace `source` by the stream name (if not `--full-refresh` flag) |
+
+> [!NOTE]
+> An optional argument `stream_type` can be defined for both macros to specify the Snowflake [stream type](https://docs.snowflake.com/en/user-guide/streams-intro#types-of-streams). 
 
 
 # Materialization

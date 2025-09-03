@@ -1,0 +1,7 @@
+version: 2
+
+models:
+  - name: conso_client_view
+    tests:
+      - dbt_utils.equality:
+          compare_model: ref('conso_client_view_incr')
