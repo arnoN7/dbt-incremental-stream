@@ -128,6 +128,8 @@ CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}});
 
 
 {%- materialization incremental_stream, adapter='snowflake' -%}
+    {% set original_query_tag = set_query_tag() %}
+
     {% set target_relation = this %}
     {%- set unique_key = config.get('unique_key') -%}
     {% set incremental_strategy = config.get('incremental_strategy') or 'default' %}
@@ -155,6 +157,8 @@ CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}});
 
     {{ run_hooks(post_hooks, inside_transaction=False) }}
     {% do drop_relation_if_exists(tmp_relation) %}
+
+    {% do unset_query_tag(original_query_tag) %}
 
     {{ return({'relations': [target_relation]}) }}
 
