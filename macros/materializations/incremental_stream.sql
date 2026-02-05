@@ -16,16 +16,15 @@
 {% set grant_config = config.get('grants') %}
 {% set on_schema_change = incremental_validate_on_schema_change(config.get('on_schema_change'), default='ignore') %}
 {%- set streams = [] -%}
-{%- set materialization = 'table' -%}
 {#-- Drop Target Table in full-refresh mode  --#}
-{% if full_refresh_mode -%} 
+{% if full_refresh_mode -%}
     DROP TABLE IF EXISTS {{ target_relation }};
 {% endif %}
 
 {% for src in src_list %}
     {#-- Get the source & target table name --#}
     {%- set src_table = '' -%}
-    {%- if src['mode'] == 'source' -%} 
+    {%- if src['mode'] == 'source' -%}
         {%- set source_table = load_relation(source(src['source_name'], src['table_name'])) -%}
         {#-- to avoid quoted tables --#}
         {%- set source_table_raw = source(src['source_name'], src['table_name']) -%}
@@ -34,8 +33,11 @@
         {#-- to avoid quoted tables --#}
         {%- set source_table_raw = ref(src['table_name']) -%}
     {%- endif -%}
+    {#-- Determine materialization type for each source individually --#}
     {%- if source_table.is_view -%}
-      {%- set materialization = 'view' -%}
+        {%- set materialization = 'view' -%}
+    {%- else -%}
+        {%- set materialization = 'table' -%}
     {%- endif -%}
     {%- set target_table = target_relation -%}
     {%- set target_stream = target_relation.include(identifier=false) | string + '.'+ incr_stream.get_stream_name(target_relation.include(database=false, schema=false) | string, source_table_raw.include(database=false, schema=false) | string) -%}
