@@ -17,7 +17,7 @@ New to dbt packages? Read more about them [here](https://docs.getdbt.com/docs/bu
 Use `incremental_stream` materialisation like [dbt incremental model](https://docs.getdbt.com/docs/build/incremental-models) :
 * Replace `ref` by `stream_ref` macro to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a dbt model
 * Replace `source`by `stream_source` to add a [stream](https://docs.snowflake.com/en/user-guide/streams-intro) on a source
-* `incr_stream.get_stream_metadata_columns()` must be included to retreive METADATA columns of each `STREAMS`. Hence the materialization can deal accordingly with the changes on inputs tables (`INSERT`, `UPDATE`, `DELETE`) but Metadata columns (`METADATA$ACTION`, `METADATA$ISUPDATE`, `METADATA$ROW_ID`) will not be included in the model
+* `incr_stream.get_stream_metadata_columns()` must be included to retrieve METADATA columns of each `STREAMS`. Hence the materialization can deal accordingly with the changes on inputs tables (`INSERT`, `UPDATE`, `DELETE`) but Metadata columns (`METADATA$ACTION`, `METADATA$ISUPDATE`, `METADATA$ROW_ID`) will not be included in the model
 * Like in [dbt incremental model](https://docs.getdbt.com/docs/build/incremental-models#defining-a-unique-key-optional) `unique_key` optional parameter is supported. DBT will perform a `MERGE` with a unique_key an `INSERT` instead.
 * Like in [dbt incremental model](https://docs.getdbt.com/docs/build/incremental-models#how-do-i-rebuild-an-incremental-model) `--full-refresh` rebuild the target model based on the source tables
 * An optional dbt [Project Variable](https://docs.getdbt.com/docs/build/project-variables) can be added to create streams at a specific timestamp using [Snowflake Time Travel with Stream](https://docs.snowflake.com/en/sql-reference/sql/create-stream#using-time-travel-with-the-source-table). The below example shows how to force to recreate a given model and related streams (using `--full-refresh` option) at given TIMESTAMP using `--vars '{TIMESTAMP: 2024-04-13 00:00:00}'`. Date format is : `yyyy-mm-dd hh24:mi:ss`
@@ -107,7 +107,7 @@ A test model [conso_client_multiple_streams.sql](/integration_tests/models/dwh_m
 `stream_ref` and `stream_source` macro include created [streams](https://docs.snowflake.com/en/user-guide/streams-intro) in the compiled SQL code of the model. 
 * [Stream](https://docs.snowflake.com/en/user-guide/streams-intro) created in `{{this}}.database` and `{{this}}.schema`
 * [Stream](https://docs.snowflake.com/en/user-guide/streams-intro) name follows this naming convention : `S_{{this.name}}_{{source_table_name}}`
-* `get_stream_metadata_columns` is used to easily retreive metadata columns from the stream (`METADATA$ACTION`, `METADATA$ISUPDATE`, `METADATA$ROW_ID`)
+* `get_stream_metadata_columns` is used to easily retrieve metadata columns from the stream (`METADATA$ACTION`, `METADATA$ISUPDATE`, `METADATA$ROW_ID`)
 
 
 > [!NOTE]
@@ -150,7 +150,7 @@ And more to explore in sub DBT Project [integration_tests](/integration_tests/)
 # 1. Add 30 new random clients to ADD_CLIENTS table 
 # 2. Merge it in CONSO_CLIENT and CONSO_CLIENT_INCR
 # 3. Test CONSO_CLIENT and CONSO_CLIENT_INCR equals
-cd ./integration_test
+cd ./integration_tests
 dbt build
 ```
 

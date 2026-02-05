@@ -4,28 +4,30 @@
 {#--    1) sql = SELECT statement with source or ref tables --#}
 {#--    2) src_table = source or ref table  		        --#}
 {#--    3) unique_key = PK used for the merge               --#}
-{#--    3) sql = SQL used for the transformation            --#}
+{#--    4) sql = SQL used for the transformation            --#}
 {#-- ###################################################### --#}
 
 {%- macro merge_stream_sql(target_relation, sql, tmp_relation, unique_key) -%}
 {%- set full_refresh_mode = (flags.FULL_REFRESH == True) -%}
 
+{#-- Ensure unique_key is a list --#}
+{%- if unique_key is string -%}
+    {%- set unique_key = [unique_key] -%}
+{%- endif -%}
+
 {#-- Get parameter values --#}
-{% set target_relation = this %}
 {%- set src_list = config.get('src_list') -%}
-{% set grant_config = config.get('grants') %}
-{% set on_schema_change = incremental_validate_on_schema_change(config.get('on_schema_change'), default='ignore') %}
 {%- set streams = [] -%}
-{%- set materialization = 'table' -%}
 {#-- Drop Target Table in full-refresh mode  --#}
-{% if full_refresh_mode -%} 
+{% if full_refresh_mode -%}
     DROP TABLE IF EXISTS {{ target_relation }};
 {% endif %}
 
 {% for src in src_list %}
     {#-- Get the source & target table name --#}
     {%- set src_table = '' -%}
-    {%- if src['mode'] == 'source' -%} 
+    {%- set materialization = 'table' -%}
+    {%- if src['mode'] == 'source' -%}
         {%- set source_table = load_relation(source(src['source_name'], src['table_name'])) -%}
         {#-- to avoid quoted tables --#}
         {%- set source_table_raw = source(src['source_name'], src['table_name']) -%}
@@ -34,7 +36,7 @@
         {#-- to avoid quoted tables --#}
         {%- set source_table_raw = ref(src['table_name']) -%}
     {%- endif -%}
-    {%- if source_table.is_view -%}
+    {%- if source_table is not none and source_table.is_view -%}
       {%- set materialization = 'view' -%}
     {%- endif -%}
     {%- set target_table = target_relation -%}
@@ -135,7 +137,6 @@ CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}});
     {% set incremental_strategy = config.get('incremental_strategy') or 'default' %}
     {% set tmp_relation_type = dbt_snowflake_get_tmp_relation_type(incremental_strategy, unique_key, 'sql') %}
     {% set tmp_relation = make_temp_relation(target_relation).incorporate(type=tmp_relation_type) %}
-    {%- set existing_relation = load_relation(target_relation) -%}
 
     -- setup
     {{ run_hooks(pre_hooks, inside_transaction=False) }}
