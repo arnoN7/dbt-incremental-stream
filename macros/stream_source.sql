@@ -19,7 +19,15 @@
     {{- config.set('src_table', table_name) -}}
     {%- set list_tables = [] -%}
     {%- if config.get('src_list') -%}
-        {%- set list_tables = config.get('src_list') -%}
+        {%- set retrieved_list = config.get('src_list') -%}
+        {#-- Handle DBT Fusion compatibility: ensure we have a list, not a string --#}
+        {%- if retrieved_list is string -%}
+            {%- set list_tables = [] -%}
+        {%- elif retrieved_list is iterable and retrieved_list is not mapping -%}
+            {%- set list_tables = retrieved_list -%}
+        {%- else -%}
+            {%- set list_tables = [] -%}
+        {%- endif -%}
     {%- endif -%}
     {%- if mode == 'source' -%}
         {{- config.set('src', source_name) -}}
