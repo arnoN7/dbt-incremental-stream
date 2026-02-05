@@ -10,3 +10,4 @@
 /integration_tests/unit_tests/__pycache__/
 integration_tests/package-lock.yml
 .DS_Store
+/.env
