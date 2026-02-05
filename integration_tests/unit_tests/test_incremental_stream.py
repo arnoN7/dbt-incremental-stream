@@ -329,4 +329,30 @@ def test_finops_multiple_stream():
     con.cursor().execute("ALTER WAREHOUSE {} SUSPEND".format(test_profile['warehouse']))
     subprocess.run(["dbt", "run", "--select", "conso_client_multiple_streams", "--target", "TEST"], capture_output=True, text=True)
     assert con.cursor(DictCursor).execute("SHOW WAREHOUSES LIKE '{}'".format(test_profile['warehouse'])).fetchone()['state'] == 'SUSPENDED'
-    
+
+def test_quoted_columns():
+    """Test that proper column quoting works with special column names"""
+    init_db_and_dbt()
+    # Run the Python model to create initial data with quoted columns
+    result = subprocess.run(["dbt", "run", "--select", "add_clients_quoted", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout
+
+    # Run both incremental_stream and standard incremental models
+    result = subprocess.run(["dbt", "run", "--select", "dwh_quoted_columns", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout
+
+    # Add more data to test merge/update with quoted columns
+    result = subprocess.run(["dbt", "run", "--select", "add_clients_quoted", "--target", "TEST"], capture_output=True, text=True)
+    assert "Completed successfully" in result.stdout
+
+    # Run merge with the new data
+    result = subprocess.run(["dbt", "run", "--select", "dwh_quoted_columns", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout
+
+    # Test that both models produce the same result
+    result = subprocess.run(["dbt", "test", "--select", "conso_client_quoted", "--target", "TEST"], capture_output=True, text=True)
+    print(result.stdout)
+    assert "Completed successfully" in result.stdout

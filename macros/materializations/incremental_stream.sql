@@ -90,32 +90,38 @@ CREATE TABLE IF NOT EXISTS {{ target_relation }} AS SELECT * FROM ({{sql}});
                 | rejectattr('name', 'equalto', 'METADATA$ROW_ID')
                 | list %}
     {%- if unique_key -%}
+    {#-- Create a lookup map of column names (uppercase) to their actual names --#}
+    {%- set column_map = {} -%}
+    {%- for col in columns -%}
+        {%- set _ = column_map.update({col.name|upper: col.name}) -%}
+    {%- endfor -%}
     MERGE INTO  {{ target_relation }} TARGET
     USING {{tmp_relation}} SOURCE
     ON ({% for key in unique_key %}
-    TARGET.{{ key }} = SOURCE.{{ key }}{%- if not loop.last %} AND {% endif %}{% endfor %}
+    {%- set actual_key = column_map.get(key|upper, key) -%}
+    TARGET.{{ adapter.quote(actual_key) }} = SOURCE.{{ adapter.quote(actual_key) }}{%- if not loop.last %} AND {% endif %}{% endfor %}
     )
     -- Mode DELETE
     WHEN MATCHED AND SOURCE.METADATA$ACTION = 'DELETE' AND SOURCE.METADATA$ISUPDATE = 'FALSE' THEN
         DELETE
     -- Mode UPDATE
-    WHEN MATCHED AND SOURCE.METADATA$ACTION = 'INSERT' THEN 
+    WHEN MATCHED AND SOURCE.METADATA$ACTION = 'INSERT' THEN
     UPDATE SET {%- for col in columns %}
-    TARGET.{{col.name}} = SOURCE.{{col.name}}{%- if not loop.last %},{% endif %}{% endfor %}
+    TARGET.{{ adapter.quote(col.name) }} = SOURCE.{{ adapter.quote(col.name) }}{%- if not loop.last %},{% endif %}{% endfor %}
     -- Mode INSERT
     WHEN NOT MATCHED AND SOURCE.METADATA$ACTION = 'INSERT' THEN INSERT
     ( {% for col in columns%}
-    {{col.name}}{%- if not loop.last %},{% endif %}{% endfor %}
+    {{ adapter.quote(col.name) }}{%- if not loop.last %},{% endif %}{% endfor %}
     )
     VALUES
     ({% for col in columns%}
-    SOURCE.{{col.name}}{%- if not loop.last %},{% endif %}{% endfor %}
+    SOURCE.{{ adapter.quote(col.name) }}{%- if not loop.last %},{% endif %}{% endfor %}
     )
     ;
     {% else %}
-        INSERT INTO {{ target_relation }}  
+        INSERT INTO {{ target_relation }}
         SELECT {% for col in columns%}
-        SOURCE.{{col.name}}{%- if not loop.last %},{% endif %}{% endfor %} FROM {{tmp_relation}} SOURCE WHERE SOURCE.METADATA$ACTION = 'INSERT' 
+        SOURCE.{{ adapter.quote(col.name) }}{%- if not loop.last %},{% endif %}{% endfor %} FROM {{tmp_relation}} SOURCE WHERE SOURCE.METADATA$ACTION = 'INSERT'
         AND SOURCE.METADATA$ISUPDATE = 'FALSE';
     {%- endif -%}
 
