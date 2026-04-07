@@ -16,11 +16,16 @@
 
 {%- macro stream_input(table_name, mode, stream_type, source_name='') -%}
     {%- set input_model = None -%}
-    {{- config.set('src_table', table_name) -}}
+    {%- set _meta_raw = config.get('meta') -%}
+    {%- if _meta_raw is mapping -%}
+        {%- set _meta = _meta_raw -%}
+    {%- else -%}
+        {%- set _meta = {} -%}
+    {%- endif -%}
     {%- set list_tables = [] -%}
-    {%- if config.get('src_list') -%}
-        {%- set retrieved_list = config.get('src_list') -%}
-        {#-- Handle DBT Fusion compatibility: ensure we have a list, not a string --#}
+    {%- if _meta.get('src_list') -%}
+        {%- set retrieved_list = _meta.get('src_list') -%}
+        {#-- Handle dbt Fusion compatibility: ensure we have a list, not a string --#}
         {%- if retrieved_list is string -%}
             {%- set list_tables = [] -%}
         {%- elif retrieved_list is iterable and retrieved_list is not mapping -%}
@@ -30,7 +35,6 @@
         {%- endif -%}
     {%- endif -%}
     {%- if mode == 'source' -%}
-        {{- config.set('src', source_name) -}}
         {{- incr_stream.unique_append(list_tables, {'mode':'source', 'stream_type':stream_type, 'source_name':source_name, 'table_name':table_name})  -}}
         {%- set input_model = source(source_name, table_name) -%}
     {%- else -%}
@@ -38,7 +42,8 @@
         {{- incr_stream.unique_append(list_tables, {'mode':'ref', 'stream_type':stream_type, 'table_name':table_name})  -}}
     {%- endif -%}
     {#-- Get the real table name if source or ref use an identifier or alias --#}
-    {{- config.set('src_list', list_tables) -}}
+    {%- set _ = _meta.update({'src_list': list_tables}) -%}
+    {{- config.set('meta', _meta) -}}
     {%- set full_refresh_mode = (flags.FULL_REFRESH == True) -%}
     {% set relation_exists = load_relation(this) is not none %}
     {%- if full_refresh_mode or not relation_exists -%}

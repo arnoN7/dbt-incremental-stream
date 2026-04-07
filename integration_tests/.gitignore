@@ -8,3 +8,4 @@
 /datasets
 /integration_tests/functional_tests/__pycache__
 /integration_tests/functional_tests/.pytest_cache
+dbt_internal_packages/

@@ -2,8 +2,7 @@
 {#-- Merge of stream to the target                          --#}
 {#-- Main parameters :                                      --#}
 {#--    1) sql = SELECT statement with source or ref tables --#}
-{#--    2) src_table = source or ref table  		        --#}
-{#--    3) unique_key = PK used for the merge               --#}
+{#--    2) unique_key = PK used for the merge               --#}
 {#--    3) sql = SQL used for the transformation            --#}
 {#-- ###################################################### --#}
 
@@ -12,7 +11,8 @@
 
 {#-- Get parameter values --#}
 {% set target_relation = this %}
-{%- set src_list = config.get('src_list') -%}
+{%- set _meta_raw = config.get('meta') -%}
+{%- set src_list = (_meta_raw.get('src_list') if _meta_raw is mapping else none) -%}
 {% set grant_config = config.get('grants') %}
 {% set on_schema_change = incremental_validate_on_schema_change(config.get('on_schema_change'), default='ignore') %}
 {%- set streams = [] -%}
