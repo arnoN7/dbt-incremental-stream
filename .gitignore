@@ -11,3 +11,4 @@
 integration_tests/package-lock.yml
 .DS_Store
 /.env
+dbt_internal_packages/
